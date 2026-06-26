@@ -1,5 +1,5 @@
 /*:
- * @plugindesc SciFi Battle Core v0.1.0
+ * @plugindesc SciFi Battle Core v0.2.0
  * @author Arya Setyaki Abdillah & OpenAI ChatGPT
  *
  * @help
@@ -10,7 +10,7 @@
  * This plugin redirects HP damage processing through SciFi Battle Core.
  *
  * Version:
- *   0.1.0
+ *   0.2.0
  *
  * Requires:
  *   SciFi_Core
@@ -27,6 +27,12 @@ var SciFi = SciFi || {};
 "use strict";
 
 //=============================================================================
+// Version
+//=============================================================================
+
+SciFi.Version = "0.2.0";
+
+//=============================================================================
 // Dependency Check
 //=============================================================================
 
@@ -41,25 +47,49 @@ if (!Imported.SciFi_Core) {
 SciFi.Battle = SciFi.Battle || {};
 
 //=============================================================================
+// Battle Context
+//=============================================================================
+
+SciFi.Battle.createContext = function(action, target, damage) {
+
+    const context = {
+
+        action: action,
+
+        subject: action.subject(),
+
+        target: target,
+
+        damage: damage
+
+    };
+
+    return context;
+
+};
+
+//=============================================================================
 // HP Damage Pipeline
 //=============================================================================
 
-SciFi.Battle.processHpDamage = function(action, target, value) {
+SciFi.Battle.processHpDamage = function(context) {
 
-    // Drain
-    if (action.isDrain()) {
-        value = Math.min(target.hp, value);
+    if (context.action.isDrain()) {
+        context.damage = Math.min(
+            context.target.hp,
+            context.damage
+        );
     }
 
-    action.makeSuccess(target);
+    context.action.makeSuccess(context.target);
 
-    target.gainHp(-value);
+    context.target.gainHp(-context.damage);
 
-    if (value > 0) {
-        target.onDamage(value);
+    if (context.damage > 0) {
+        context.target.onDamage(context.damage);
     }
 
-    action.gainDrainedHp(value);
+    context.action.gainDrainedHp(context.damage);
 
 };
 
@@ -69,11 +99,18 @@ SciFi.Battle.processHpDamage = function(action, target, value) {
 
 Game_Action.prototype.executeHpDamage = function(target, value) {
 
-    SciFi.Battle.processHpDamage(this, target, value);
+    const context =
+        SciFi.Battle.createContext(
+            this,
+            target,
+            value
+        );
+
+    SciFi.Battle.processHpDamage(context);
 
 };
 
 SciFi.log("BattleCore Loaded");
-SciFi.log("BattleCore Version 0.1.0");
+SciFi.log("BattleCore Version " + SciFi.Version);
 
 })();

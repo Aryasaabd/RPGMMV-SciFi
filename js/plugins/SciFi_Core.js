@@ -32,7 +32,7 @@ var SciFi = SciFi || {};
 // Version
 //=============================================================================
 
-SciFi.Version = "0.1.0";
+SciFi.Version = "0.1.1";
 
 //=============================================================================
 // Debug
@@ -74,7 +74,7 @@ SciFi.log = function(message) {
 
     if (!SciFi.Debug) return;
 
-    console.log("[SciFi] " + message);
+    console.log("[SciFi] ", message);
 
 };
 
