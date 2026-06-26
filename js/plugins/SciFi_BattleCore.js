@@ -1,5 +1,5 @@
 /*:
- * @plugindesc SciFi Battle Core v0.2.0
+ * @plugindesc SciFi Battle Core v0.3.0
  * @author Arya Setyaki Abdillah & OpenAI ChatGPT
  *
  * @help
@@ -10,7 +10,7 @@
  * This plugin redirects HP damage processing through SciFi Battle Core.
  *
  * Version:
- *   0.2.0
+ *   0.3.0
  *
  * Requires:
  *   SciFi_Core
@@ -30,7 +30,7 @@ var SciFi = SciFi || {};
 // Version
 //=============================================================================
 
-SciFi.Version = "0.2.0";
+SciFi.Version = "0.3.0";
 
 //=============================================================================
 // Dependency Check
@@ -54,15 +54,25 @@ SciFi.Battle.createContext = function(action, target, damage) {
 
     const context = {
 
-        action: action,
+    action: action,
 
-        subject: action.subject(),
+    subject: action.subject(),
 
-        target: target,
+    target: target,
 
-        damage: damage
+    originalDamage: damage,
 
-    };
+    damage: damage,
+
+    shieldDamage: 0,
+
+    armorReduction: 0,
+
+    hpDamage: 0,
+
+    cancelled: false
+
+	};
 
     return context;
 
@@ -86,6 +96,8 @@ SciFi.Battle.processHpDamage = function(context) {
     }
 
     context.action.makeSuccess(context.target);
+	
+	context.hpDamage = context.damage;
 
     context.target.gainHp(-context.damage);
 
@@ -94,6 +106,8 @@ SciFi.Battle.processHpDamage = function(context) {
     }
 
     context.action.gainDrainedHp(context.damage);
+	
+	SciFi.log(context);
 
 };
 

@@ -1,5 +1,5 @@
 /*:
- * @plugindesc SciFi Shield System v0.2.0
+ * @plugindesc SciFi Shield System v0.3.0
  * @author Arya Setyaki Abdillah & OpenAI ChatGPT
  *
  * @help
@@ -30,7 +30,7 @@ var SciFi = SciFi || {};
 // Version
 //=============================================================================
 
-SciFi.Version = "0.2.0";
+SciFi.Version = "0.3.0";
 
 
 //=============================================================================
@@ -134,10 +134,29 @@ Game_Battler.prototype.gainShield = function(value) {
 
 SciFi.Shield.processDamage = function(context) {
 
+    // Heal tidak diproses Shield
+    if (context.damage <= 0) {
+        return context;
+    }
+
+    const target = context.target;
+
+    // Tidak punya shield
+    if (target._shield <= 0) {
+        return context;
+    }
+
+    const absorbed = Math.min(target._shield, context.damage);
+
+    target._shield -= absorbed;
+
+    context.shieldDamage = absorbed;
+
+    context.damage -= absorbed;
+
     return context;
 
 };
-
 
 //=============================================================================
 
