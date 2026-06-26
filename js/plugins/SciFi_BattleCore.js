@@ -73,7 +73,11 @@ SciFi.Battle.createContext = function(action, target, damage) {
 //=============================================================================
 
 SciFi.Battle.processHpDamage = function(context) {
-
+	
+	if (Imported.SciFi_Shield) {
+		context = SciFi.Shield.processDamage(context);
+	}
+	
     if (context.action.isDrain()) {
         context.damage = Math.min(
             context.target.hp,

@@ -1,5 +1,5 @@
 /*:
- * @plugindesc SciFi Shield System v0.1.0
+ * @plugindesc SciFi Shield System v0.2.0
  * @author Arya Setyaki Abdillah & OpenAI ChatGPT
  *
  * @help
@@ -25,6 +25,13 @@ var SciFi = SciFi || {};
 (function() {
 
 "use strict";
+
+//=============================================================================
+// Version
+//=============================================================================
+
+SciFi.Version = "0.2.0";
+
 
 //=============================================================================
 // Dependency Check
@@ -122,8 +129,19 @@ Game_Battler.prototype.gainShield = function(value) {
 };
 
 //=============================================================================
+// Battle Processing
+//=============================================================================
+
+SciFi.Shield.processDamage = function(context) {
+
+    return context;
+
+};
+
+
+//=============================================================================
 
 SciFi.log("Shield Loaded");
-SciFi.log("Shield Version 0.1.0");
+SciFi.log("Shield Version " + SciFi.Version);
 
 })();
