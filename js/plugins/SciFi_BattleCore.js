@@ -83,11 +83,29 @@ SciFi.Battle.createContext = function(action, target, damage) {
 //=============================================================================
 
 SciFi.Battle.processHpDamage = function(context) {
-	
-	if (Imported.SciFi_Shield) {
-		context = SciFi.Shield.processDamage(context);
-	}
-	
+
+    //--------------------------------------------------------------------------
+    // Shield Layer
+    //--------------------------------------------------------------------------
+
+    if (Imported.SciFi_Shield) {
+        context = SciFi.Shield.processDamage(context);
+		SciFi.log("Shield -> Armor");
+    }
+
+    //--------------------------------------------------------------------------
+    // Armor Layer
+    //--------------------------------------------------------------------------
+
+    if (Imported.SciFi_Armor) {
+        context = SciFi.Armor.processDamage(context);
+		SciFi.log("Armor -> HP");
+    }
+
+    //--------------------------------------------------------------------------
+    // Drain
+    //--------------------------------------------------------------------------
+
     if (context.action.isDrain()) {
         context.damage = Math.min(
             context.target.hp,
@@ -96,8 +114,8 @@ SciFi.Battle.processHpDamage = function(context) {
     }
 
     context.action.makeSuccess(context.target);
-	
-	context.hpDamage = context.damage;
+
+    context.hpDamage = context.damage;
 
     context.target.gainHp(-context.damage);
 
@@ -106,8 +124,8 @@ SciFi.Battle.processHpDamage = function(context) {
     }
 
     context.action.gainDrainedHp(context.damage);
-	
-	SciFi.log(context);
+
+    SciFi.log(context);
 
 };
 
