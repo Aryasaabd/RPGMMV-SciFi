@@ -1,5 +1,5 @@
 /*:
- * @plugindesc SciFi Armor System v0.1.0
+ * @plugindesc SciFi Armor System v0.2.0
  * @author Arya & ChatGPT
  *
  * @help
@@ -43,7 +43,7 @@ SciFi.Armor = SciFi.Armor || {};
  */
 SciFi.Armor.value = function(target) {
 
-    return target.def;
+    return Math.max(0, target.def - 1);
 
 };
 
@@ -52,16 +52,38 @@ SciFi.Armor.value = function(target) {
 //=============================================================================
 
 /*
- * Armor processing.
- * v0.1.0 does not modify damage yet.
+ * Applies armor reduction to HP damage.
+ * Shield damage is not affected.
  */
 SciFi.Armor.processDamage = function(context) {
+	
+	SciFi.log(
+		"Before Armor | Damage: " + context.damage +
+		" | Armor: " + SciFi.Armor.value(context.target)
+	);
 
-    SciFi.log("Armor processing");
+    // Tidak perlu diproses jika tidak ada damage HP
+    if (context.damage <= 0) {
+		
+		SciFi.log(
+			"After Armor | Damage: " + context.damage
+		);
+		
+        return context;
+    }
 
+    const armor = SciFi.Armor.value(context.target);
+
+    // Simpan untuk debugging dan battle context
+    context.armorReduction = Math.min(armor, context.damage);
+
+    // Kurangi damage HP
+    context.damage = Math.max(0, context.damage - armor);
+
+    // Debug
     SciFi.log(
-        "Armor Value : " +
-        SciFi.Armor.value(context.target)
+        "Armor: -" + context.armorReduction +
+        " | HP Damage: " + context.damage
     );
 
     return context;
@@ -72,6 +94,6 @@ SciFi.Armor.processDamage = function(context) {
 // Plugin Loaded
 //=============================================================================
 
-SciFi.log("Armor v0.1.0 Loaded");
+SciFi.log("Armor v0.2.0 Loaded");
 
 })();

@@ -133,6 +133,11 @@ Game_Battler.prototype.gainShield = function(value) {
 //=============================================================================
 
 SciFi.Shield.processDamage = function(context) {
+	
+	SciFi.log(
+		"Before Shield | Damage: " + context.damage +
+		" | Target: " + context.target.name()
+	);
 
     // Heal tidak diproses Shield
     if (context.damage <= 0) {
