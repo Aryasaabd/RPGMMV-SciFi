@@ -1,5 +1,5 @@
 /*:
- * @plugindesc SciFi Equipment Data v0.1.0
+ * @plugindesc SciFi Equipment Data v0.2.0
  * @author Arya & ChatGPT
  *
  * @help
@@ -74,6 +74,46 @@ SciFi.EquipmentData.slots = function(battler) {
 };
 
 //=============================================================================
+// Equipment Access
+//=============================================================================
+
+SciFi.EquipmentData.primary = function(battler) {
+
+    return battler.equips()[0];
+
+};
+
+SciFi.EquipmentData.offhand = function(battler) {
+
+    return battler.equips()[1];
+
+};
+
+SciFi.EquipmentData.armor = function(battler) {
+
+    return battler.equips()[2];
+
+};
+
+SciFi.EquipmentData.shieldGenerator = function(battler) {
+
+    return battler.equips()[3];
+
+};
+
+SciFi.EquipmentData.accessory = function(battler) {
+
+    return battler.equips()[4];
+
+};
+
+SciFi.EquipmentData.frame = function(battler) {
+
+    return battler.equips()[5];
+
+};
+
+//=============================================================================
 
 SciFi.log("EquipmentData Loaded");
-SciFi.log("EquipmentData v0.1.0");
+SciFi.log("EquipmentData v0.2.0");
