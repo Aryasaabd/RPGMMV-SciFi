@@ -99,6 +99,27 @@ SciFi.Armor.processDamage = function(context) {
         "Armor: -" + context.armorReduction +
         " | HP Damage: " + context.damage
     );
+	
+	//------------------------------------------------------------
+	// Armor Piercing
+	//------------------------------------------------------------
+
+	if (Imported.SciFi_ArmorPiercing) {
+
+		var ap = SciFi.ArmorPiercing.value(context.action);
+		
+		SciFi.log(context);
+		SciFi.log(context.action);
+		SciFi.log(SciFi.ArmorPiercing);
+		
+		context.armorPiercing = ap;
+
+		SciFi.ArmorPiercing.apply(
+			context.target,
+			ap
+		);
+
+	}
 
     return context;
 

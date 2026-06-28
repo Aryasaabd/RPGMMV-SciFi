@@ -134,6 +134,44 @@ SciFi.Durability.max = function(target) {
 };
 
 //=============================================================================
+// Durability Modification
+//=============================================================================
+
+/*
+ * Damages armor durability.
+ */
+SciFi.Durability.damage = function(target, amount) {
+
+    if (amount <= 0) {
+        return;
+    }
+
+    target._scifi.durability.current =
+        Math.max(
+            0,
+            target._scifi.durability.current - amount
+        );
+
+};
+
+/*
+ * Repairs armor durability.
+ */
+SciFi.Durability.repair = function(target, amount) {
+
+    if (amount <= 0) {
+        return;
+    }
+
+    target._scifi.durability.current =
+        Math.min(
+            target._scifi.durability.max,
+            target._scifi.durability.current + amount
+        );
+
+};
+
+//=============================================================================
 // Plugin Loaded
 //=============================================================================
 
