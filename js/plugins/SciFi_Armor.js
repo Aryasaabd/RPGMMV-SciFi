@@ -1,5 +1,5 @@
 /*:
- * @plugindesc SciFi Armor System v0.2.0
+ * @plugindesc SciFi Armor System v0.2.1
  * @author Arya & ChatGPT
  *
  * @help
@@ -43,7 +43,21 @@ SciFi.Armor = SciFi.Armor || {};
  */
 SciFi.Armor.value = function(target) {
 
-    return Math.max(0, target.def - 1);
+    var baseArmor = Math.max(0, target.def - 1);
+
+    if (!Imported.SciFi_Durability) {
+        return baseArmor;
+    }
+
+    var ratio = SciFi.Durability.ratio(target);
+
+	SciFi.log(
+		"Armor Base: " + baseArmor +
+		" | Ratio: " + ratio +
+		" | Effective: " + Math.floor(baseArmor * ratio)
+	);
+
+    return Math.floor(baseArmor * ratio);
 
 };
 
@@ -94,6 +108,6 @@ SciFi.Armor.processDamage = function(context) {
 // Plugin Loaded
 //=============================================================================
 
-SciFi.log("Armor v0.2.0 Loaded");
+SciFi.log("Armor v0.2.1 Loaded");
 
 })();

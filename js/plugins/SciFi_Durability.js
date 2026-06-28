@@ -1,5 +1,5 @@
 /*:
- * @plugindesc SciFi Durability System v0.1.0
+ * @plugindesc SciFi Durability System v0.2.0
  * @author Arya & ChatGPT
  *
  * @help
@@ -115,6 +115,18 @@ SciFi.Durability.current = function(target) {
 
 };
 
+SciFi.Durability.ratio = function(target) {
+
+    var max = SciFi.Durability.max(target);
+
+    if (max <= 0) {
+        return 0;
+    }
+
+    return SciFi.Durability.current(target) / max;
+
+};
+
 SciFi.Durability.max = function(target) {
 
     return target._scifi.durability.max;
@@ -125,6 +137,6 @@ SciFi.Durability.max = function(target) {
 // Plugin Loaded
 //=============================================================================
 
-SciFi.log("Durability v0.1.0 Loaded");
+SciFi.log("Durability v0.2.0 Loaded");
 
 })();
