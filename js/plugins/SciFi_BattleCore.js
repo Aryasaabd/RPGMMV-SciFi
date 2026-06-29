@@ -73,6 +73,20 @@ SciFi.Battle.createContext = function(action, target, damage) {
     cancelled: false
 
 	};
+	
+	//------------------------------------------------------------
+	// Damage Data
+	//------------------------------------------------------------
+
+	if (Imported.SciFi_DamageData) {
+
+		SciFi.log("Entering DamageData");
+
+        SciFi.DamageData.build(context);
+
+        SciFi.log("Leaving DamageData");
+
+	}
 
     return context;
 
