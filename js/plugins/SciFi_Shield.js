@@ -179,13 +179,55 @@ SciFi.Shield.processDamage = function(context) {
         return context;
     }
 
-    const absorbed = Math.min(target._shield, context.damage);
+    //------------------------------------------------------------
+	// Shield Element Processing
+	//------------------------------------------------------------
 
-    target._shield -= absorbed;
+	var shield = target._shield;
+	var rate = context.shieldElementRate;
 
-    context.shieldDamage = absorbed;
+	// Damage efektif terhadap Shield
+	var effectiveDamage =
+		context.damage * rate;
 
-    context.damage -= absorbed;
+	// Shield tidak habis
+	if (effectiveDamage < shield) {
+
+		target._shield = Math.max(
+			0,
+			target._shield - effectiveDamage
+		);
+
+		context.shieldDamage = effectiveDamage;
+
+		context.damage = 0;
+
+	}
+	// Shield habis
+	else {
+
+		// Damage asli yang dibutuhkan
+		var requiredDamage =
+			shield / rate;
+
+		target._shield = 0;
+
+		context.shieldDamage = shield;
+
+		context.damage =
+			Math.max(
+				0,
+				context.damage - requiredDamage
+			);
+
+	}
+
+	SciFi.log(
+    "Shield"
+    + " | Effective: " + effectiveDamage
+    + " | Required: " + (shield / rate)
+    + " | Remaining Damage: " + context.damage
+);
 
     return context;
 

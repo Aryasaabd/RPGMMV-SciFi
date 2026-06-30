@@ -155,9 +155,23 @@ SciFi.EquipmentData.frame = function(battler) {
  */
 SciFi.EquipmentData.shieldElementRate = function(target, elementId) {
 
-    var shield = SciFi.EquipmentData.shieldGenerator(target);
+    //------------------------------------------------------------
+    // Shield Data Source
+    //------------------------------------------------------------
 
-    if (!shield) {
+    var source = null;
+
+    if (target.isActor()) {
+
+        source = SciFi.EquipmentData.shieldGenerator(target);
+
+    } else {
+
+        source = target.enemy();
+
+    }
+
+    if (!source) {
         return 1.0;
     }
 
@@ -166,7 +180,7 @@ SciFi.EquipmentData.shieldElementRate = function(target, elementId) {
 
     var match;
 
-    while ((match = regex.exec(shield.note)) !== null) {
+    while ((match = regex.exec(source.note)) !== null) {
 
         if (Number(match[1]) === elementId) {
 
