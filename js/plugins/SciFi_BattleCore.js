@@ -65,6 +65,8 @@ SciFi.Battle.createContext = function(action, target, damage) {
     damage: damage,
 
     shieldDamage: 0,
+	
+	shieldElementRate: 1.0,
 
     armorReduction: 0,
 

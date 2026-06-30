@@ -1,5 +1,5 @@
 /*:
- * @plugindesc SciFi Shield System v0.3.0
+ * @plugindesc SciFi Shield System v0.5.0
  * @author Arya Setyaki Abdillah & OpenAI ChatGPT
  *
  * @help
@@ -30,7 +30,7 @@ var SciFi = SciFi || {};
 // Version
 //=============================================================================
 
-SciFi.Version = "0.3.0";
+SciFi.Version = "0.5.0";
 
 
 //=============================================================================
@@ -145,6 +145,34 @@ SciFi.Shield.processDamage = function(context) {
     }
 
     const target = context.target;
+	
+	//------------------------------------------------------------
+	// Shield Element
+	//------------------------------------------------------------
+
+	var rate = 1.0;
+
+	if (
+		Imported.SciFi_DamageData &&
+		context.damageData
+	) {
+
+		rate = SciFi.EquipmentData.shieldElementRate(
+			target,
+			context.damageData.elementId
+		);
+
+	}
+
+	context.shieldElementRate = rate;
+	
+	SciFi.log(
+		"Shield Element"
+		+ " | Element: "
+		+ context.damageData.elementId
+		+ " | Rate: "
+		+ rate
+	);
 
     // Tidak punya shield
     if (target._shield <= 0) {

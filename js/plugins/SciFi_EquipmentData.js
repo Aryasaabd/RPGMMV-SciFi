@@ -1,5 +1,5 @@
 /*:
- * @plugindesc SciFi Equipment Data v0.2.0
+ * @plugindesc SciFi Equipment Data v0.3.1
  * @author Arya & ChatGPT
  *
  * @help
@@ -78,42 +78,131 @@ SciFi.EquipmentData.slots = function(battler) {
 //=============================================================================
 
 SciFi.EquipmentData.primary = function(battler) {
+	
+	if (!battler.isActor()) {
+    return null;
+	}
 
     return battler.equips()[0];
 
 };
 
 SciFi.EquipmentData.offhand = function(battler) {
+	
+	if (!battler.isActor()) {
+    return null;
+	}
 
     return battler.equips()[1];
 
 };
 
 SciFi.EquipmentData.armor = function(battler) {
+	
+	if (!battler.isActor()) {
+    return null;
+	}
 
     return battler.equips()[2];
 
 };
 
 SciFi.EquipmentData.shieldGenerator = function(battler) {
+	
+	if (!battler.isActor()) {
+    return null;
+	}
 
     return battler.equips()[3];
 
 };
 
 SciFi.EquipmentData.accessory = function(battler) {
+	
+	if (!battler.isActor()) {
+    return null;
+	}
 
     return battler.equips()[4];
 
 };
 
 SciFi.EquipmentData.frame = function(battler) {
+	
+	if (!battler.isActor()) {
+    return null;
+	}
 
     return battler.equips()[5];
 
 };
 
 //=============================================================================
+// Shield Data
+//=============================================================================
+
+/*
+ * Returns the Shield Element Rate.
+ *
+ * Notetag format:
+ *
+ * <ShieldElementRate:2,150>
+ *
+ * Returns:
+ * 1.5  = 150%
+ * 0.5  = 50%
+ * 1.0  = Default
+ */
+SciFi.EquipmentData.shieldElementRate = function(target, elementId) {
+
+    var shield = SciFi.EquipmentData.shieldGenerator(target);
+
+    if (!shield) {
+        return 1.0;
+    }
+
+    var regex =
+        /<ShieldElementRate\s*:\s*(\d+)\s*,\s*(\d+)\s*>/gi;
+
+    var match;
+
+    while ((match = regex.exec(shield.note)) !== null) {
+
+        if (Number(match[1]) === elementId) {
+
+            return Number(match[2]) / 100;
+
+        }
+
+    }
+
+    return 1.0;
+
+};
+
+/*
+ * Debug
+ */
+SciFi.EquipmentData.debugShieldElementRate =
+function(target, elementId) {
+
+    var rate =
+        SciFi.EquipmentData.shieldElementRate(
+            target,
+            elementId
+        );
+
+    SciFi.log(
+        "Shield Element Rate" +
+        " | Element: " + elementId +
+        " | Rate: " + rate
+    );
+
+    return rate;
+
+};
+
+//=============================================================================
 
 SciFi.log("EquipmentData Loaded");
-SciFi.log("EquipmentData v0.2.0");
+SciFi.log("EquipmentData v0.3.1");
