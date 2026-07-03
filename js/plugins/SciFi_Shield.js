@@ -1,5 +1,5 @@
 /*:
- * @plugindesc SciFi Shield System v0.7.0
+ * @plugindesc SciFi Shield System v0.8.0
  * @author Arya & ChatGPT
  *
  * @param Shielded State ID
@@ -46,7 +46,7 @@ SciFi.Shield.SHIELDED_STATE_ID =
 // Version
 //=============================================================================
 
-SciFi.Version = "0.7.0";
+SciFi.Version = "0.8.0";
 
 
 //=============================================================================
@@ -80,6 +80,28 @@ SciFi.Shield.readShieldNotetag = function(databaseObject) {
     var match = databaseObject.note.match(/<Shield\s*:\s*(\d+)>/i);
 
     return match ? Number(match[1]) : 0;
+
+};
+
+//=============================================================================
+// Shield Recovery
+//=============================================================================
+
+/*
+ * Reads ShieldRecover notetag.
+ *
+ * Example:
+ * <ShieldRecover:50>
+ */
+SciFi.Shield.recoverValue = function(item) {
+
+    if (!item) {
+        return 0;
+    }
+
+    return Number(
+        item.meta.ShieldRecover || 0
+    );
 
 };
 
@@ -147,6 +169,43 @@ Game_Battler.prototype.setShield = function(value) {
 Game_Battler.prototype.gainShield = function(value) {
 
     this.setShield(this.shield() + value);
+
+};
+
+//=============================================================================
+// Shield Recovery Processing
+//=============================================================================
+
+const _SciFi_Game_Action_apply =
+    Game_Action.prototype.apply;
+
+Game_Action.prototype.apply = function(target) {
+
+    _SciFi_Game_Action_apply.call(
+        this,
+        target
+    );
+
+    var amount =
+        SciFi.Shield.recoverValue(
+            this.item()
+        );
+
+    if (amount <= 0) {
+        return;
+    }
+
+    target.gainShield(amount);
+
+    SciFi.log(
+        "Shield Recover"
+        + " | Target: "
+        + target.name()
+        + " | +" + amount
+        + " | Current: "
+        + target.shield()
+        + "/" + target.maxShield()
+    );
 
 };
 
