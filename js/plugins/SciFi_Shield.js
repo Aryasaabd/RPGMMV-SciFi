@@ -1,36 +1,52 @@
 /*:
- * @plugindesc SciFi Shield System v0.5.0
- * @author Arya Setyaki Abdillah & OpenAI ChatGPT
+ * @plugindesc SciFi Shield System v0.7.0
+ * @author Arya & ChatGPT
+ *
+ * @param Shielded State ID
+ * @type state
+ * @default 0
+ * @desc State otomatis ketika Shield > 0.
  *
  * @help
  * ============================================================================
  * SciFi Shield System
  * ============================================================================
  *
- * Provides shield data management.
+ * Handles:
+ * - Shield HP
+ * - Shield Element Rate
+ * - Automatic Shielded State
  *
- * This version DOES NOT affect battle.
+ * Shielded State is automatically added while Shield > 0,
+ * and removed when Shield reaches 0.
  *
- * Requires:
- *   SciFi_Core
- *   SciFi_BattleCore
- *
+ * Never add or remove Shielded manually.
  */
 
 var Imported = Imported || {};
 Imported.SciFi_Shield = true;
 
 var SciFi = SciFi || {};
+SciFi.Shield = SciFi.Shield || {};
 
 (function() {
 
 "use strict";
 
 //=============================================================================
+// Plugin Parameters
+//=============================================================================
+
+var parameters = PluginManager.parameters("SciFi_Shield");
+
+SciFi.Shield.SHIELDED_STATE_ID =
+    Number(parameters["Shielded State ID"] || 0);
+
+//=============================================================================
 // Version
 //=============================================================================
 
-SciFi.Version = "0.5.0";
+SciFi.Version = "0.7.0";
 
 
 //=============================================================================
@@ -78,10 +94,10 @@ Game_Actor.prototype.setup = function(actorId) {
     _SciFi_Actor_setup.call(this, actorId);
 
     const shield =
-        SciFi.Shield.readShieldNotetag(this.actor());
+		SciFi.Shield.readShieldNotetag(this.actor());
 
-    this._shield = shield;
-    this._maxShield = shield;
+	this._maxShield = shield;
+	this.setShield(shield);
 
 };
 
@@ -96,10 +112,10 @@ Game_Enemy.prototype.setup = function(enemyId, x, y) {
     _SciFi_Enemy_setup.call(this, enemyId, x, y);
 
     const shield =
-        SciFi.Shield.readShieldNotetag(this.enemy());
+		SciFi.Shield.readShieldNotetag(this.enemy());
 
-    this._shield = shield;
-    this._maxShield = shield;
+	this._maxShield = shield;
+	this.setShield(shield);
 
 };
 
@@ -118,13 +134,68 @@ Game_Battler.prototype.maxShield = function() {
 Game_Battler.prototype.setShield = function(value) {
 
     this._shield =
-        SciFi.Utils.clamp(value, 0, this.maxShield());
+        SciFi.Utils.clamp(
+            value,
+            0,
+            this.maxShield()
+        );
+
+    SciFi.Shield.refreshShieldState(this);
 
 };
 
 Game_Battler.prototype.gainShield = function(value) {
 
     this.setShield(this.shield() + value);
+
+};
+
+//=============================================================================
+// Shield State
+//=============================================================================
+
+/*
+ * Updates automatic Shielded state.
+ *
+ * Rules:
+ * - Shield > 0  : Add Shielded
+ * - Shield <= 0 : Remove Shielded
+ */
+SciFi.Shield.refreshShieldState = function(target) {
+
+    var stateId = SciFi.Shield.SHIELDED_STATE_ID;
+
+    if (stateId <= 0) {
+        return;
+    }
+
+    if (target.shield() > 0) {
+
+        if (!target.isStateAffected(stateId)) {
+
+            target.addState(stateId);
+
+            SciFi.log(
+                target.name() +
+                " gained Shielded."
+            );
+
+        }
+
+    } else {
+
+        if (target.isStateAffected(stateId)) {
+
+            target.removeState(stateId);
+
+            SciFi.log(
+                target.name() +
+                " lost Shielded."
+            );
+
+        }
+
+    }
 
 };
 
@@ -175,15 +246,15 @@ SciFi.Shield.processDamage = function(context) {
 	);
 
     // Tidak punya shield
-    if (target._shield <= 0) {
-        return context;
-    }
+	if (target.shield() <= 0) {
+		return context;
+	}
 
     //------------------------------------------------------------
 	// Shield Element Processing
 	//------------------------------------------------------------
 
-	var shield = target._shield;
+	var shield = target.shield();
 	var rate = context.shieldElementRate;
 
 	// Damage efektif terhadap Shield
@@ -193,10 +264,7 @@ SciFi.Shield.processDamage = function(context) {
 	// Shield tidak habis
 	if (effectiveDamage < shield) {
 
-		target._shield = Math.max(
-			0,
-			target._shield - effectiveDamage
-		);
+		target.gainShield(-effectiveDamage);
 
 		context.shieldDamage = effectiveDamage;
 
@@ -210,7 +278,7 @@ SciFi.Shield.processDamage = function(context) {
 		var requiredDamage =
 			shield / rate;
 
-		target._shield = 0;
+		target.setShield(0);
 
 		context.shieldDamage = shield;
 

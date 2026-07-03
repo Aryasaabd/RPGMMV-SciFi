@@ -3,11 +3,11 @@
 var $plugins =
 [
 {"name":"SciFi_Core","status":true,"description":"SciFi Core v0.1.0","parameters":{}},
-{"name":"SciFi_BattleCore","status":true,"description":"SciFi Battle Core v0.3.0","parameters":{}},
-{"name":"SciFi_Shield","status":true,"description":"SciFi Shield System v0.3.0","parameters":{}},
-{"name":"SciFi_EquipmentData","status":true,"description":"SciFi Equipment Data v0.2.0","parameters":{}},
-{"name":"SciFi_Armor","status":true,"description":"SciFi Armor System v0.2.0","parameters":{}},
-{"name":"SciFi_Durability","status":true,"description":"SciFi Durability System v0.1.0","parameters":{}},
+{"name":"SciFi_BattleCore","status":true,"description":"SciFi Battle Core v0.3.1","parameters":{}},
+{"name":"SciFi_Shield","status":true,"description":"SciFi Shield System v0.7.0","parameters":{"Shielded State ID":"11"}},
+{"name":"SciFi_EquipmentData","status":true,"description":"SciFi Equipment Data v0.3.1","parameters":{}},
+{"name":"SciFi_Armor","status":true,"description":"SciFi Armor System v0.2.1","parameters":{}},
+{"name":"SciFi_Durability","status":true,"description":"SciFi Durability System v0.2.0","parameters":{}},
 {"name":"SciFi_ArmorPiercing","status":true,"description":"SciFi Armor Piercing System v0.1.1","parameters":{}},
 {"name":"SciFi_DamageData","status":true,"description":"SciFi Damage Data v0.2.0","parameters":{}},
 {"name":"SRD_GameUpgrade","status":true,"description":"Enables more customization over the core mechanics of one's game while also providing additional functions for future plugins.","parameters":{"Game Window":"====================================","Game Reconstruction (1.5.X & below)":"true","Game Resolution":"{\"Width\":\"1280\",\"Height\":\"720\"}","Screen Resolution":"{\"Width\":\"\",\"Height\":\"\"}","Minimum Resolution":"{\"Width\":\"408\",\"Height\":\"312\"}","Maximum Resolution":"{\"Width\":\"\",\"Height\":\"\"}","Window Title":"","Allow Resize":"true","Initial Fullscreen":"false","Show Frame":"true","Always on Top":"false","Core Defaults":"====================================","Audio Master Volume":"100","Video Master Volume":"100","Image Cache Limit":"30","Decrypter Ignore List":"[\"system/Window.png\"]","JsonEx Max Depth":"100","Retry Intervals":"[\"500\",\"1000\",\"3000\"]","HTML Settings":"====================================","Background Color":"#000000","Image Rendering":"auto","PIXI Settings":"====================================","Garbage Collection Mode":"Automatic","Round Pixels":"false","Scale Mode":"Nearest","Wrap Mode":"Clamp"}},
