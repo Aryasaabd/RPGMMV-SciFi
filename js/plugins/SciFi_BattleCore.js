@@ -1,5 +1,5 @@
 /*:
- * @plugindesc SciFi Battle Core v0.3.1
+ * @plugindesc SciFi Battle Core v0.4.0
  * @author Arya Setyaki Abdillah & OpenAI ChatGPT
  *
  * @help
@@ -10,7 +10,7 @@
  * This plugin redirects HP damage processing through SciFi Battle Core.
  *
  * Version:
- *   0.3.1
+ *   0.4.0
  *
  * Requires:
  *   SciFi_Core
@@ -41,6 +41,57 @@ if (!Imported.SciFi_Core) {
 }
 
 //=============================================================================
+// Critical Capture
+//=============================================================================
+
+Game_Action.prototype.makeDamageValue = function(target, critical) {
+
+    this._scifiCritical = critical;
+
+    var item = this.item();
+
+    var baseValue =
+        this.evalDamageFormula(target);
+
+    var value =
+        baseValue * this.calcElementRate(target);
+
+    if (this.isPhysical()) {
+        value *= target.pdr;
+    }
+
+    if (this.isMagical()) {
+        value *= target.mdr;
+    }
+
+    if (baseValue < 0) {
+        value *= target.rec;
+    }
+
+    // ---------------------------------------------------------
+    // Critical dipindahkan ke BattleCore
+    // ---------------------------------------------------------
+
+    value =
+        this.applyVariance(
+            value,
+            item.damage.variance
+        );
+
+    value =
+        this.applyGuard(
+            value,
+            target
+        );
+
+    value =
+        Math.round(value);
+
+    return value;
+
+};
+
+//=============================================================================
 // Namespace
 //=============================================================================
 
@@ -63,6 +114,8 @@ SciFi.Battle.createContext = function(action, target, damage) {
     originalDamage: damage,
 
     damage: damage,
+	
+	critical: action._scifiCritical || false,
 
     shieldDamage: 0,
 	
@@ -99,6 +152,11 @@ SciFi.Battle.createContext = function(action, target, damage) {
 //=============================================================================
 
 SciFi.Battle.processHpDamage = function(context) {
+	
+	SciFi.log(
+		"Critical: " +
+		context.critical
+	);
 
     //--------------------------------------------------------------------------
     // Shield Layer
@@ -108,6 +166,24 @@ SciFi.Battle.processHpDamage = function(context) {
         context = SciFi.Shield.processDamage(context);
 		SciFi.log("Shield -> Armor");
     }
+	
+	//------------------------------------------------------------
+	// Critical
+	//------------------------------------------------------------
+
+	if (context.critical && context.damage > 0) {
+
+		context.damage =
+			context.action.applyCritical(
+				context.damage
+			);
+
+		SciFi.log(
+			"Critical | HP Damage: " +
+			context.damage
+		);
+
+	}
 
     //--------------------------------------------------------------------------
     // Armor Layer
