@@ -1,5 +1,5 @@
 /*:
- * @plugindesc SciFi Shield System v0.8.0
+ * @plugindesc SciFi Shield System v0.8.2
  * @author Arya & ChatGPT
  *
  * @param Shielded State ID
@@ -46,7 +46,7 @@ SciFi.Shield.SHIELDED_STATE_ID =
 // Version
 //=============================================================================
 
-SciFi.Version = "0.8.0";
+SciFi.Version = "0.8.2";
 
 
 //=============================================================================
@@ -84,6 +84,33 @@ SciFi.Shield.readShieldNotetag = function(databaseObject) {
 };
 
 //=============================================================================
+// Menu Usability
+//=============================================================================
+
+const _SciFi_Shield_testApply =
+    Game_Action.prototype.testApply;
+
+Game_Action.prototype.testApply = function(target) {
+
+    // Biarkan RPG Maker mengecek efek normal terlebih dahulu
+    if (_SciFi_Shield_testApply.call(this, target)) {
+        return true;
+    }
+
+    // Cek efek Shield Recover
+    var amount =
+        SciFi.Shield.recoverValue(this.item());
+
+    if (amount <= 0) {
+        return false;
+    }
+
+    // Bisa dipakai jika Shield belum penuh
+    return target.shield() < target.maxShield();
+
+};
+
+//=============================================================================
 // Shield Recovery
 //=============================================================================
 
@@ -116,10 +143,12 @@ Game_Actor.prototype.setup = function(actorId) {
     _SciFi_Actor_setup.call(this, actorId);
 
     const shield =
-		SciFi.Shield.readShieldNotetag(this.actor());
+		SciFi.EquipmentData.maxShield(this);
 
+	this._shield = shield;
 	this._maxShield = shield;
-	this.setShield(shield);
+
+	SciFi.Shield.refreshShieldState(this);
 
 };
 

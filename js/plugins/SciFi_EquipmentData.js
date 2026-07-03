@@ -1,5 +1,5 @@
 /*:
- * @plugindesc SciFi Equipment Data v0.3.1
+ * @plugindesc SciFi Equipment Data v0.4.0
  * @author Arya & ChatGPT
  *
  * @help
@@ -117,6 +117,31 @@ SciFi.EquipmentData.shieldGenerator = function(battler) {
 
 };
 
+//=============================================================================
+// Shield Data
+//=============================================================================
+
+/*
+ * Returns maximum shield provided by Shield Generator.
+ *
+ * Notetag:
+ * <Shield:100>
+ */
+SciFi.EquipmentData.maxShield = function(battler) {
+
+    var shield =
+        SciFi.EquipmentData.shieldGenerator(battler);
+
+    if (!shield) {
+        return 0;
+    }
+
+    return Number(
+        shield.meta.Shield || 0
+    );
+
+};
+
 SciFi.EquipmentData.accessory = function(battler) {
 	
 	if (!battler.isActor()) {
@@ -138,7 +163,7 @@ SciFi.EquipmentData.frame = function(battler) {
 };
 
 //=============================================================================
-// Shield Data
+// Shield Element Rate Data
 //=============================================================================
 
 /*
@@ -219,4 +244,4 @@ function(target, elementId) {
 //=============================================================================
 
 SciFi.log("EquipmentData Loaded");
-SciFi.log("EquipmentData v0.3.1");
+SciFi.log("EquipmentData v0.4.0");
