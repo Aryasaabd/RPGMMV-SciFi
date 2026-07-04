@@ -1,5 +1,5 @@
 /*:
- * @plugindesc SciFi Durability System v0.2.0
+ * @plugindesc SciFi Durability System v0.4.0
  * @author Arya & ChatGPT
  *
  * @help
@@ -133,6 +133,19 @@ SciFi.Durability.max = function(target) {
 
 };
 
+SciFi.Durability.setCurrent = function(target, value) {
+
+    var oldValue =
+        target._scifi.durability.current;
+
+    target._scifi.durability.current =
+        SciFi.Utils.clamp(
+            value,
+            0,
+            SciFi.Durability.max(target)
+        );
+};
+
 //=============================================================================
 // Durability Modification
 //=============================================================================
@@ -146,11 +159,14 @@ SciFi.Durability.damage = function(target, amount) {
         return;
     }
 
-    target._scifi.durability.current =
-        Math.max(
-            0,
-            target._scifi.durability.current - amount
-        );
+    SciFi.Durability.setCurrent(
+
+        target,
+
+        SciFi.Durability.current(target)
+        - amount
+
+    );
 
 };
 
@@ -163,11 +179,131 @@ SciFi.Durability.repair = function(target, amount) {
         return;
     }
 
-    target._scifi.durability.current =
-        Math.min(
-            target._scifi.durability.max,
-            target._scifi.durability.current + amount
+    SciFi.Durability.setCurrent(
+
+        target,
+
+        SciFi.Durability.current(target)
+        + amount
+	 );	
+};
+
+//=============================================================================
+// Menu Usability
+//=============================================================================
+
+const _SciFi_Durability_testApply =
+    Game_Action.prototype.testApply;
+
+Game_Action.prototype.testApply = function(target) {
+
+    if (_SciFi_Durability_testApply.call(
+        this,
+        target
+    )) {
+
+        return true;
+
+    }
+
+    var amount =
+        SciFi.Durability.repairValue(
+            this.item()
         );
+
+    if (amount <= 0) {
+        return false;
+    }
+
+    var armor =
+        SciFi.EquipmentData.armor(target);
+
+    if (!armor) {
+        return false;
+    }
+
+    return (
+		SciFi.Durability.current(target)
+		<
+		SciFi.Durability.max(target)
+	);
+};
+
+const _SciFi_Durability_apply =
+    Game_Action.prototype.apply;
+
+Game_Action.prototype.apply = function(target) {
+
+    _SciFi_Durability_apply.call(
+        this,
+        target
+    );
+
+    var amount =
+        SciFi.Durability.repairValue(
+            this.item()
+        );
+
+    if (amount <= 0) {
+        return;
+    }
+
+    SciFi.Durability.repair(
+        target,
+        amount
+    );
+
+};
+
+SciFi.Durability.repairValue = function(item) {
+
+    if (!item) {
+        return 0;
+    }
+
+    return Number(
+        item.meta.ArmorRepair || 0
+    );
+
+};
+
+//=============================================================================
+// Plugin Command
+//=============================================================================
+
+const _SciFi_Durability_pluginCommand =
+    Game_Interpreter.prototype.pluginCommand;
+
+Game_Interpreter.prototype.pluginCommand = function(command, args) {
+
+    _SciFi_Durability_pluginCommand.call(
+        this,
+        command,
+        args
+    );
+
+    if (command === "ArmorDurability") {
+
+        var actor =
+            $gameParty.leader();
+
+        if (!actor) {
+            return;
+        }
+
+        $gameMessage.add(
+
+            "Armor Durability: "
+
+            + SciFi.Durability.current(actor)
+
+            + " / "
+
+            + SciFi.Durability.max(actor)
+
+        );
+
+    }
 
 };
 
@@ -175,6 +311,6 @@ SciFi.Durability.repair = function(target, amount) {
 // Plugin Loaded
 //=============================================================================
 
-SciFi.log("Durability v0.2.0 Loaded");
+SciFi.log("Durability v0.3.0 Loaded");
 
 })();
