@@ -74,6 +74,25 @@ SciFi.EquipmentData.slots = function(battler) {
 };
 
 //=============================================================================
+// Equipment Change
+//=============================================================================
+
+const _Game_Actor_changeEquip =
+    Game_Actor.prototype.changeEquip;
+
+Game_Actor.prototype.changeEquip = function(slotId, item) {
+
+    _Game_Actor_changeEquip.call(
+        this,
+        slotId,
+        item
+    );
+
+    SciFi.EquipmentData.refresh(this);
+
+};
+
+//=============================================================================
 // Equipment Access
 //=============================================================================
 
@@ -238,6 +257,54 @@ function(target, elementId) {
     );
 
     return rate;
+
+};
+
+//=============================================================================
+// Equipment Refresh
+//=============================================================================
+
+/*
+ * Refreshs cached equipment-dependent values.
+ */
+SciFi.EquipmentData.refresh = function(battler) {
+
+    //------------------------------------------------------------
+    // Shield
+    //------------------------------------------------------------
+
+    if (Imported.SciFi_Shield) {
+
+        var oldMax =
+            battler._maxShield || 0;
+
+        var newMax =
+            SciFi.EquipmentData.maxShield(
+                battler
+            );
+
+        battler._maxShield = newMax;
+
+        //--------------------------------------------------------
+        // Clamp current shield
+        //--------------------------------------------------------
+
+        battler.setShield(
+            Math.min(
+                battler.shield(),
+                newMax
+            )
+        );
+
+        SciFi.log(
+            "Equipment Refresh"
+            + " | Shield "
+            + oldMax
+            + " -> "
+            + newMax
+        );
+
+    }
 
 };
 
