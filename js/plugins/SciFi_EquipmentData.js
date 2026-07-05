@@ -1,5 +1,5 @@
 /*:
- * @plugindesc SciFi Equipment Data v0.4.0
+ * @plugindesc SciFi Equipment Data v0.4.1
  * @author Arya & ChatGPT
  *
  * @help
@@ -269,39 +269,26 @@ function(target, elementId) {
  */
 SciFi.EquipmentData.refresh = function(battler) {
 
-    //------------------------------------------------------------
+	//------------------------------------------------------------
     // Shield
     //------------------------------------------------------------
 
     if (Imported.SciFi_Shield) {
 
-        var oldMax =
-            battler._maxShield || 0;
-
-        var newMax =
-            SciFi.EquipmentData.maxShield(
-                battler
-            );
-
-        battler._maxShield = newMax;
-
-        //--------------------------------------------------------
-        // Clamp current shield
-        //--------------------------------------------------------
-
-        battler.setShield(
-            Math.min(
-                battler.shield(),
-                newMax
-            )
+        SciFi.Shield.refreshEquipment(
+            battler
         );
 
-        SciFi.log(
-            "Equipment Refresh"
-            + " | Shield "
-            + oldMax
-            + " -> "
-            + newMax
+    }
+	
+	//------------------------------------------------------------
+    // Durability
+    //------------------------------------------------------------
+
+       if (Imported.SciFi_Durability) {
+
+        SciFi.Durability.refreshEquipment(
+            battler
         );
 
     }
@@ -311,4 +298,4 @@ SciFi.EquipmentData.refresh = function(battler) {
 //=============================================================================
 
 SciFi.log("EquipmentData Loaded");
-SciFi.log("EquipmentData v0.4.0");
+SciFi.log("EquipmentData v0.4.1");

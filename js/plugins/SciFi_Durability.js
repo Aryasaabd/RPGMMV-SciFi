@@ -1,5 +1,5 @@
 /*:
- * @plugindesc SciFi Durability System v0.4.0
+ * @plugindesc SciFi Durability System v0.4.1
  * @author Arya & ChatGPT
  *
  * @help
@@ -90,18 +90,37 @@ Game_Battler.prototype.refreshSciFiDurability = function() {
 
     if (this.isActor()) {
 
-        armor = SciFi.EquipmentData.armor(this);
+        armor =
+            SciFi.EquipmentData.armor(this);
 
     } else {
 
-        armor = this.enemy();
+        armor =
+            this.enemy();
 
     }
 
-    var max = SciFi.Durability.maxDurability(armor);
+    var max =
+        SciFi.Durability.maxDurability(armor);
 
-    this._scifi.durability.current = max;
+    var current =
+        this._scifi.durability.current;
+
+    if (current == null) {
+
+        current = max;
+
+    }
+
     this._scifi.durability.max = max;
+
+    SciFi.Durability.setCurrent(
+
+        this,
+
+        current
+
+    );
 
 };
 
@@ -308,9 +327,17 @@ Game_Interpreter.prototype.pluginCommand = function(command, args) {
 };
 
 //=============================================================================
+
+SciFi.Durability.refreshEquipment = function(battler) {
+
+    battler.refreshSciFiDurability();
+
+};
+
+//=============================================================================
 // Plugin Loaded
 //=============================================================================
 
-SciFi.log("Durability v0.3.0 Loaded");
+SciFi.log("Durability v0.4.1 Loaded");
 
 })();

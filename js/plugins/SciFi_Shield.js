@@ -1,5 +1,5 @@
 /*:
- * @plugindesc SciFi Shield System v0.8.2
+ * @plugindesc SciFi Shield System v0.8.3
  * @author Arya & ChatGPT
  *
  * @param Shielded State ID
@@ -46,7 +46,7 @@ SciFi.Shield.SHIELDED_STATE_ID =
 // Version
 //=============================================================================
 
-SciFi.Version = "0.8.2";
+SciFi.Version = "0.8.3";
 
 
 //=============================================================================
@@ -386,6 +386,50 @@ SciFi.Shield.processDamage = function(context) {
 );
 
     return context;
+
+};
+
+//------------------------------------------------------------
+// Shield Refresh
+//------------------------------------------------------------
+
+SciFi.Shield.refreshEquipment = function(battler) {
+
+    var oldMax =
+        battler._maxShield || 0;
+
+    var newMax =
+        SciFi.EquipmentData.maxShield(
+            battler
+        );
+
+    battler._maxShield = newMax;
+
+    battler.setShield(
+
+        Math.min(
+
+            battler.shield(),
+
+            newMax
+
+        )
+
+    );
+
+    SciFi.log(
+
+        "Equipment Refresh"
+
+        + " | Shield "
+
+        + oldMax
+
+        + " -> "
+
+        + newMax
+
+    );
 
 };
 
