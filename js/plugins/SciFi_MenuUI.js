@@ -49,6 +49,150 @@ SciFi.MenuUI.Font = {
 };
 
 //=============================================================================
+// Card
+//=============================================================================
+
+SciFi.MenuUI.Card = {
+
+    BackgroundColor : "rgba(15,20,30,0.45)",
+
+    BorderColor : "#5FD6FF",
+
+    BorderWidth : 5
+
+};
+
+//=============================================================================
+// Gradient
+//=============================================================================
+
+SciFi.MenuUI.Gradient = {
+
+    Height : 180,
+
+    StartAlpha : 0.85,
+
+    EndAlpha : 0.00
+
+};
+
+//=============================================================================
+// Card Background
+//=============================================================================
+
+Window_MenuStatus.prototype.drawCardBackground =
+function(rect) {
+
+    var pad = 1;
+
+    this.contents.fillRect(
+
+        rect.x + pad,
+
+        rect.y + pad,
+
+        rect.width - pad * 2,
+
+        rect.height - pad * 2,
+
+        SciFi.MenuUI.Card.BackgroundColor
+
+    );
+
+};
+
+//=============================================================================
+// Card Border
+//=============================================================================
+
+Window_MenuStatus.prototype.drawCardBorder =
+function(rect) {
+
+    var w = SciFi.MenuUI.Card.BorderWidth;
+
+    var c = SciFi.MenuUI.Card.BorderColor;
+
+    var pad = 1;
+
+    // Top
+    this.contents.fillRect(
+        rect.x + pad,
+        rect.y + pad,
+        rect.width - pad * 2,
+        w,
+        c
+    );
+
+    // Bottom
+    this.contents.fillRect(
+        rect.x + pad,
+        rect.y + rect.height - w - pad,
+        rect.width - pad * 2,
+        w,
+        c
+    );
+
+    // Left
+    this.contents.fillRect(
+        rect.x + pad,
+        rect.y + pad,
+        w,
+        rect.height - pad * 2,
+        c
+    );
+
+    // Right
+    this.contents.fillRect(
+        rect.x + rect.width - w - pad,
+        rect.y + pad,
+        w,
+        rect.height - pad * 2,
+        c
+    );
+
+};
+
+//=============================================================================
+// Card Gradient
+//=============================================================================
+
+Window_MenuStatus.prototype.drawCardGradient =
+function(rect) {
+
+    var h =
+        SciFi.MenuUI.Gradient.Height;
+
+    for (var i = 0; i < h; i++) {
+
+        var rate =
+            i / h;
+
+        var alpha =
+            SciFi.MenuUI.Gradient.StartAlpha *
+            rate;
+
+        this.contents.fillRect(
+
+            rect.x,
+
+            rect.y +
+            rect.height -
+            h +
+            i,
+
+            rect.width,
+
+            1,
+
+            "rgba(0,0,0," + alpha + ")"
+
+        );
+
+    }
+
+};
+
+//=============================================================================
 // Window_MenuStatus Layout
 //=============================================================================
 
@@ -97,19 +241,103 @@ Window_MenuStatus.prototype.spacing = function() {
 
 };
 
-Window_MenuStatus.prototype.drawItem = function(index) {
-
-    this.drawItemBackground(index);
-
-    var actor =
-        $gameParty.members()[index];
+Window_MenuStatus.prototype.drawItemBackground =
+function(index) {
 
     var rect =
         this.itemRect(index);
 
+    this.drawCardBackground(rect);
+
+    this.drawCardGradient(rect);
+
+    this.drawCardBorder(rect);
+
+    //------------------------------------------
+    // Selection
+    //------------------------------------------
+
+    if (index === this.index()) {
+
+        this.changePaintOpacity(false);
+
+        this.contents.fillRect(
+
+            rect.x,
+
+            rect.y,
+
+            rect.width,
+
+            rect.height,
+
+            "rgba(255,255,255,0.08)"
+
+        );
+
+        this.changePaintOpacity(true);
+
+    }
+
+    //------------------------------------------
+    // Pending Formation
+    //------------------------------------------
+
+    if (index === this._pendingIndex) {
+
+        this.contents.fillRect(
+
+            rect.x,
+
+            rect.y,
+
+            rect.width,
+
+            rect.height,
+
+            "rgba(80,220,255,0.18)"
+
+        );
+
+    }
+
+};
+
+//=============================================================================
+// Draw Item
+//=============================================================================
+
+Window_MenuStatus.prototype.drawItem =
+function(index) {
+
+    var actor =
+        $gameParty.members()[index];
+
+    if (!actor) {
+
+        return;
+
+    }
+
+    var rect =
+        this.itemRect(index);
+
+    //------------------------------------------
+    // Background
+    //------------------------------------------
+
+    this.drawItemBackground(index);
+
+    //------------------------------------------
+    // Card
+    //------------------------------------------
+
     this.drawActorCard(
+
         actor,
+
         rect
+
     );
 
 };
@@ -124,23 +352,6 @@ function(actor, rect) {
     this.drawCardPortrait(actor, rect);
 
     this.drawCardResources(actor, rect);
-
-};
-
-Window_MenuStatus.prototype.drawCardBackground =
-function(rect) {
-
-    this.contents.fillRect(
-
-        rect.x + 2,
-        rect.y + 2,
-
-        rect.width - 4,
-        rect.height - 4,
-
-        this.gaugeBackColor()
-
-    );
 
 };
 
@@ -239,22 +450,6 @@ function(actor, rect) {
 
     var h =
         rect.height - 220;
-
-    //------------------------------------------
-    // Portrait Background
-    //------------------------------------------
-
-    this.contents.fillRect(
-
-        x,
-        y,
-
-        w,
-        h,
-
-        this.normalColor()
-
-    );
 
     //------------------------------------------
     // Face Position
@@ -646,6 +841,6 @@ function(type, value, max, x, y, width) {
 // Plugin Loaded
 //=============================================================================
 
-console.log("SciFi_MenuUI v0.10.0 Loaded");
+console.log("SciFi_MenuUI v0.11.0 Loaded");
 
 })();
