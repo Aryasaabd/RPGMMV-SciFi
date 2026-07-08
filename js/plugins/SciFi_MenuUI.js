@@ -307,7 +307,7 @@ function(actor, rect) {
     y += 38;
 
     this.drawResourceGauge(
-        "HP",
+        "Hitpoints",
         actor.hp,
         actor.mhp,
         x,
@@ -387,59 +387,21 @@ function(type, value, max, x, y, width) {
         "right"
     );
 
-    //------------------------------------------
-    // Gauge Background
-    //------------------------------------------
+this.drawSegmentGauge(
 
-    this.contents.fillRect(
+    type,
 
-		x,
+    value,
 
-		y + 30,
+    max,
 
-		width,
+    x,
 
-		gaugeHeight,
+    y + 30,
 
-		SciFi.MenuUI.resourceBackColor(type)
+    width
 
-	);
-
-    //------------------------------------------
-    // Gauge Fill
-    //------------------------------------------
-
-    this.contents.fillRect(
-
-        x,
-
-        y + 30,
-
-        Math.floor(width * rate),
-
-        gaugeHeight,
-
-        SciFi.MenuUI.resourceFillColor(type)
-
-    );
-	
-	//------------------------------------------
-	// Gauge Highlight
-	//------------------------------------------
-
-	this.contents.fillRect(
-
-		x,
-
-		y + 30,
-
-		Math.floor(width * rate),
-
-		2,
-
-		"rgba(255,255,255,0.55)"
-
-	);
+);
 
 	this.contents.fontSize =
     oldSize;
@@ -457,7 +419,7 @@ SciFi.MenuUI.resourceFillColor = function(type) {
     case "Shield":
         return "#00C8FF";
 
-    case "HP":
+    case "Hitpoints":
         return "#E05050";
 
     case "Stamina":
@@ -479,7 +441,7 @@ SciFi.MenuUI.resourceBackColor = function(type) {
     case "Shield":
         return "#0B4A60";
 
-    case "HP":
+    case "Hitpoints":
         return "#5A1F1F";
 
     case "Stamina":
@@ -495,9 +457,195 @@ SciFi.MenuUI.resourceBackColor = function(type) {
 };
 
 //=============================================================================
+// Gauge
+//=============================================================================
+
+SciFi.MenuUI.Gauge = {
+
+    SegmentValue: 20,
+
+    SegmentGap: 2,
+
+    Height: 12
+
+};
+
+//=============================================================================
+// Segmented Gauge
+//=============================================================================
+
+Window_MenuStatus.prototype.drawSegmentGauge =
+function(type, value, max, x, y, width) {
+
+    //------------------------------------------
+    // Config
+    //------------------------------------------
+
+    var segmentValue =
+        SciFi.MenuUI.Gauge.SegmentValue;
+
+    var gap =
+        SciFi.MenuUI.Gauge.SegmentGap;
+
+    var height =
+        SciFi.MenuUI.Gauge.Height;
+
+    //------------------------------------------
+    // Safety
+    //------------------------------------------
+
+    if (max <= 0) {
+
+        return;
+
+    }
+
+    //------------------------------------------
+    // Segment Count
+    //------------------------------------------
+
+    var segmentCount =
+        Math.ceil(
+            max / segmentValue
+        );
+
+    //------------------------------------------
+    // Unit Count
+    //------------------------------------------
+
+    var lastCapacity =
+        max % segmentValue;
+
+    if (lastCapacity === 0) {
+
+        lastCapacity = segmentValue;
+
+    }
+
+    var totalUnits =
+        (segmentCount - 1)
+        +
+        (lastCapacity / segmentValue);
+
+    var totalGap =
+        (segmentCount - 1) * gap;
+
+    var unitWidth =
+        (width - totalGap)
+        / totalUnits;
+
+    //------------------------------------------
+    // Draw Segments
+    //------------------------------------------
+
+    var currentX = x;
+
+    for (var i = 0; i < segmentCount; i++) {
+
+        //--------------------------------------
+        // Segment Range
+        //--------------------------------------
+
+        var start =
+            i * segmentValue;
+
+        var end =
+            Math.min(
+                max,
+                start + segmentValue
+            );
+
+        var capacity =
+            end - start;
+        
+        var currentWidth =
+            unitWidth *
+            (capacity / segmentValue);
+
+        //--------------------------------------
+        // Current Fill
+        //--------------------------------------
+
+        var current =
+            Math.max(
+                0,
+                Math.min(
+                    value - start,
+                    capacity
+                )
+            );
+
+        var rate =
+            current / capacity;
+
+        //--------------------------------------
+        // Background
+        //--------------------------------------
+
+        this.contents.fillRect(
+
+            currentX,
+
+            y,
+
+            currentWidth,
+
+            height,
+
+            SciFi.MenuUI.resourceBackColor(type)
+
+        );
+
+        //--------------------------------------
+        // Fill
+        //--------------------------------------
+
+        if (rate > 0) {
+
+            this.contents.fillRect(
+
+                currentX,
+
+                y,
+
+                currentWidth * rate,
+
+                height,
+
+                SciFi.MenuUI.resourceFillColor(type)
+
+            );
+
+            //----------------------------------
+            // Highlight
+            //----------------------------------
+
+            this.contents.fillRect(
+
+                currentX,
+
+                y,
+
+                currentWidth * rate - 1,
+
+                2,
+
+                "rgba(255,255,255,0.40)"
+
+            );
+
+        }
+
+        currentX += currentWidth + gap;
+
+    }
+
+};
+
+//=============================================================================
 // Plugin Loaded
 //=============================================================================
 
-console.log("SciFi_MenuUI v0.9.0 Loaded");
+console.log("SciFi_MenuUI v0.10.0 Loaded");
 
 })();
