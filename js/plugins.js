@@ -13,5 +13,6 @@ var $plugins =
 {"name":"SciFi_ArmorPiercing","status":true,"description":"SciFi Armor Piercing System v0.1.1","parameters":{}},
 {"name":"SciFi_DamageData","status":true,"description":"SciFi Damage Data v0.2.0","parameters":{}},
 {"name":"J_Critical_Multiplier","status":true,"description":"Changes the Critical Multiplier.","parameters":{"Multiplier":"1.5"}},
-{"name":"Status Menu","status":true,"description":"SciFi Stats","parameters":{}}
+{"name":"Status Menu","status":true,"description":"SciFi Stats","parameters":{}},
+{"name":"UT_OpenTypePixelFont","status":true,"description":"Draw true type fonts using opentype.js -- this is the passive version, no need to setup.","parameters":{}}
 ];

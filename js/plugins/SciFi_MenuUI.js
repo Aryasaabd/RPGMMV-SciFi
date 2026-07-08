@@ -393,17 +393,17 @@ function(type, value, max, x, y, width) {
 
     this.contents.fillRect(
 
-        x,
+		x,
 
-        y + 30,
+		y + 30,
 
-        width,
+		width,
 
-        gaugeHeight,
+		gaugeHeight,
 
-        this.gaugeBackColor()
+		SciFi.MenuUI.resourceBackColor(type)
 
-    );
+	);
 
     //------------------------------------------
     // Gauge Fill
@@ -419,22 +419,43 @@ function(type, value, max, x, y, width) {
 
         gaugeHeight,
 
-        SciFi.MenuUI.resourceColor(type)
+        SciFi.MenuUI.resourceFillColor(type)
 
     );
+	
+	//------------------------------------------
+	// Gauge Highlight
+	//------------------------------------------
+
+	this.contents.fillRect(
+
+		x,
+
+		y + 30,
+
+		Math.floor(width * rate),
+
+		2,
+
+		"rgba(255,255,255,0.55)"
+
+	);
 
 	this.contents.fontSize =
     oldSize;
 
 };
 
-SciFi.MenuUI.resourceColor =
-function(type) {
+//=============================================================================
+// Resource Colors
+//=============================================================================
+
+SciFi.MenuUI.resourceFillColor = function(type) {
 
     switch (type) {
 
     case "Shield":
-        return "#00BFFF";
+        return "#00C8FF";
 
     case "HP":
         return "#E05050";
@@ -443,11 +464,33 @@ function(type) {
         return "#4CD964";
 
     case "Momentum":
-        return "#FFD040";
+        return "#FFC83D";
 
     }
 
-    return "#FFC83D";
+    return "#FFFFFF";
+
+};
+
+SciFi.MenuUI.resourceBackColor = function(type) {
+
+    switch (type) {
+
+    case "Shield":
+        return "#0B4A60";
+
+    case "HP":
+        return "#5A1F1F";
+
+    case "Stamina":
+        return "#1D4B22";
+
+    case "Momentum":
+        return "#5A4A16";
+
+    }
+
+    return "#444444";
 
 };
 
@@ -455,6 +498,6 @@ function(type) {
 // Plugin Loaded
 //=============================================================================
 
-console.log("SciFi_MenuUI v0.8.0 Loaded");
+console.log("SciFi_MenuUI v0.9.0 Loaded");
 
 })();
