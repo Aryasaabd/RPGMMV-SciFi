@@ -78,6 +78,47 @@ function(actor) {
 };
 
 //=============================================================================
+// Control Hints
+//=============================================================================
+
+SciFi.MenuUI.ControlHints = {
+
+    FontSize : 18,
+
+    LineHeight : 28,
+
+    KeyWidth : 48,
+
+    TextColor : "#FFFFFF",
+
+    KeyColor : "#5FD6FF",
+
+    X : 20,
+
+    Y : Graphics.boxHeight - 110,
+
+    Data : [
+
+        {
+            key : "▲▼ ◀▶",
+            text : "Navigate"
+        },
+
+        {
+            key : "Z / Enter",
+            text : "Confirm"
+        },
+
+        {
+            key : "X / Esc",
+            text : "Back"
+        }
+
+    ]
+
+};
+
+//=============================================================================
 // Fonts
 //=============================================================================
 
@@ -202,12 +243,16 @@ function(window) {
         bc
     );
 
+    // Left
+
     bitmap.fillRect(
         0,0,
         bw,
         window.height,
         bc
     );
+
+    // Right
 
     bitmap.fillRect(
         window.width-bw,
@@ -343,14 +388,14 @@ function(rect) {
 
         this.contents.fillRect(
 
-            rect.x,
+            rect.x + 1,
 
             rect.y +
             rect.height -
             h +
-            i,
+            i - 1,
 
-            rect.width,
+            rect.width - 2,
 
             1,
 
@@ -544,6 +589,84 @@ function(actor, rect) {
     //------------------------------------------
 
     this.drawCardResources(actor, rect);
+
+};
+
+//=============================================================================
+// Control Hint
+//=============================================================================
+
+SciFi.MenuUI.createControlHints =
+function(scene) {
+
+    var cfg =
+        SciFi.MenuUI.ControlHints;
+
+    var bmp =
+        new Bitmap(220,140);
+
+    bmp.fontSize =
+        cfg.FontSize;
+
+    for (var i = 0; i < cfg.Data.length; i++) {
+
+        var y =
+            i * cfg.LineHeight;
+
+        //----------------------------------
+        // Key
+        //----------------------------------
+
+        bmp.textColor =
+            cfg.KeyColor;
+
+        bmp.drawText(
+
+            cfg.Data[i].key,
+
+            2,
+
+            y,
+
+            cfg.KeyWidth,
+
+            cfg.LineHeight
+
+        );
+
+        //----------------------------------
+        // Description
+        //----------------------------------
+
+        bmp.textColor =
+            cfg.TextColor;
+
+        bmp.drawText(
+
+            cfg.Data[i].text,
+
+            cfg.KeyWidth + 50,
+
+            y,
+
+            180,
+
+            cfg.LineHeight
+
+        );
+
+    }
+
+    var sprite =
+        new Sprite(bmp);
+
+    sprite.x = 10;
+    sprite.y = scene._commandWindow.height + 10;
+
+    scene._commandWindow.addChild(sprite);
+
+    scene._controlHintSprite =
+        sprite;
 
 };
 
@@ -1060,12 +1183,14 @@ function() {
 
     }
 
+    SciFi.MenuUI.createControlHints(this);
+
 };
 
 //=============================================================================
 // Plugin Loaded
 //=============================================================================
 
-console.log("SciFi_MenuUI v0.11.2 Loaded");
+console.log("SciFi_MenuUI v0.11.4 Loaded");
 
 })();
