@@ -35,6 +35,25 @@ SciFi.MenuUI.cardPadding = function() {
 };
 
 //=============================================================================
+// Font Style
+//=============================================================================
+
+SciFi.MenuUI.FontStyle = {};
+
+SciFi.MenuUI.applyFontStyle =
+function(window) {
+
+    window.contents.paintOpacity = 255;
+
+    window.contents.outlineColor =
+        "rgba(0,0,0,1)";
+
+    window.contents.outlineWidth =
+        4;
+
+};
+
+//=============================================================================
 // Portrait
 //=============================================================================
 
@@ -83,6 +102,133 @@ SciFi.MenuUI.Card = {
     BorderColor : "#5FD6FF",
 
     BorderWidth : 5
+
+};
+
+//=============================================================================
+// Window
+//=============================================================================
+
+SciFi.MenuUI.Window = {
+
+    BackgroundColor : "rgba(15,20,30,0.45)",
+
+    BorderColor : "#5FD6FF",
+
+    BorderWidth : 2,
+
+    Opacity : 0.45
+
+};
+
+//=============================================================================
+// Draw Window
+//=============================================================================
+
+SciFi.MenuUI.drawWindow =
+function(window) {
+
+    //------------------------------------------
+    // Hide default window
+    //------------------------------------------
+
+    window.opacity = 0;
+
+    window.backOpacity = 0;
+
+    //------------------------------------------
+    // Remove previous sprite
+    //------------------------------------------
+
+    if (window._sciFiWindow) {
+
+        window.removeChild(window._sciFiWindow);
+
+    }
+
+    //------------------------------------------
+    // Create bitmap
+    //------------------------------------------
+
+    var bitmap = new Bitmap(
+
+        window.width,
+
+        window.height
+
+    );
+
+    //------------------------------------------
+    // Background
+    //------------------------------------------
+
+    var c = SciFi.MenuUI.Window.BackgroundColor;
+
+    bitmap.fillRect(
+
+        0,
+
+        0,
+
+        window.width,
+
+        window.height,
+
+        c
+
+    );
+
+    //------------------------------------------
+    // Border
+    //------------------------------------------
+
+    var bw =
+        SciFi.MenuUI.Window.BorderWidth;
+
+    var bc =
+        SciFi.MenuUI.Window.BorderColor;
+
+    bitmap.fillRect(
+        0,0,
+        window.width,bw,
+        bc
+    );
+
+    bitmap.fillRect(
+        0,
+        window.height-bw,
+        window.width,
+        bw,
+        bc
+    );
+
+    bitmap.fillRect(
+        0,0,
+        bw,
+        window.height,
+        bc
+    );
+
+    bitmap.fillRect(
+        window.width-bw,
+        0,
+        bw,
+        window.height,
+        bc
+    );
+
+    //------------------------------------------
+    // Sprite
+    //------------------------------------------
+
+    window._sciFiWindow =
+        new Sprite(bitmap);
+
+    window.addChildToBack(
+
+        window._sciFiWindow
+
+    );
 
 };
 
@@ -404,6 +550,8 @@ function(actor, rect) {
 Window_MenuStatus.prototype.drawCardHeader =
 function(actor, rect) {
 
+    SciFi.MenuUI.applyFontStyle(this);
+
     var oldSize =
         this.contents.fontSize;
 
@@ -518,6 +666,8 @@ function(actor, rect) {
 
 Window_MenuStatus.prototype.drawCardResources =
 function(actor, rect) {
+
+    SciFi.MenuUI.applyFontStyle(this);
 
     var x = rect.x + 12;
     var y = rect.height + rect.y - 170;
@@ -871,9 +1021,51 @@ function(type, value, max, x, y, width) {
 };
 
 //=============================================================================
+// Apply Menu Window
+//=============================================================================
+
+var _Scene_Menu_create =
+    Scene_Menu.prototype.create;
+
+Scene_Menu.prototype.create =
+function() {
+
+    _Scene_Menu_create.call(this);
+
+    //------------------------------------------
+    // All menu windows
+    //------------------------------------------
+
+    var windows = [
+
+        this._commandWindow,
+
+        this._goldWindow,
+
+        this._statusWindow
+
+    ];
+
+    for (var i = 0; i < windows.length; i++) {
+
+        if (windows[i]) {
+
+            SciFi.MenuUI.drawWindow(
+
+                windows[i]
+
+            );
+
+        }
+
+    }
+
+};
+
+//=============================================================================
 // Plugin Loaded
 //=============================================================================
 
-console.log("SciFi_MenuUI v0.11.1 Loaded");
+console.log("SciFi_MenuUI v0.11.2 Loaded");
 
 })();
