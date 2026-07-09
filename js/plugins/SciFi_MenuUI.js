@@ -35,6 +35,30 @@ SciFi.MenuUI.cardPadding = function() {
 };
 
 //=============================================================================
+// Portrait
+//=============================================================================
+
+SciFi.MenuUI.loadPortrait =
+function(actor) {
+
+    var filename =
+        "Actor" + actor.actorId();
+
+    return ImageManager.loadBitmap(
+
+        "img/portraits/",
+
+        filename,
+
+        0,
+
+        true
+
+    );
+
+};
+
+//=============================================================================
 // Fonts
 //=============================================================================
 
@@ -68,9 +92,9 @@ SciFi.MenuUI.Card = {
 
 SciFi.MenuUI.Gradient = {
 
-    Height : 180,
+    Height : 200,
 
-    StartAlpha : 0.85,
+    StartAlpha : 0.9,
 
     EndAlpha : 0.00
 
@@ -247,12 +271,6 @@ function(index) {
     var rect =
         this.itemRect(index);
 
-    this.drawCardBackground(rect);
-
-    this.drawCardGradient(rect);
-
-    this.drawCardBorder(rect);
-
     //------------------------------------------
     // Selection
     //------------------------------------------
@@ -345,11 +363,39 @@ function(index) {
 Window_MenuStatus.prototype.drawActorCard =
 function(actor, rect) {
 
+    //------------------------------------------
+    // Background
+    //------------------------------------------
+
     this.drawCardBackground(rect);
+
+    //------------------------------------------
+    // Portrait
+    //------------------------------------------
+
+    this.drawCardPortrait(actor, rect);
+
+    //------------------------------------------
+    // Gradient
+    //------------------------------------------
+
+    this.drawCardGradient(rect);
+
+    //------------------------------------------
+    // Border
+    //------------------------------------------
+
+    this.drawCardBorder(rect);
+
+    //------------------------------------------
+    // Header
+    //------------------------------------------
 
     this.drawCardHeader(actor, rect);
 
-    this.drawCardPortrait(actor, rect);
+    //------------------------------------------
+    // Resources
+    //------------------------------------------
 
     this.drawCardResources(actor, rect);
 
@@ -437,47 +483,34 @@ function(actor, rect) {
 Window_MenuStatus.prototype.drawCardPortrait =
 function(actor, rect) {
 
-    var margin = 12;
+    var bitmap =
+        SciFi.MenuUI.loadPortrait(actor);
 
-    var x =
-        rect.x + margin;
+    if (!bitmap.isReady()) {
 
-    var y =
-        rect.y + 80;
+        return;
 
-    var w =
-        rect.width - margin * 2;
+    }
 
-    var h =
-        rect.height - 220;
+    this.contents.blt(
 
-    //------------------------------------------
-    // Face Position
-    //------------------------------------------
+        bitmap,
 
-    var faceWidth =
-        Window_Base._faceWidth;
+        0,
 
-    var faceHeight =
-        Window_Base._faceHeight;
+        0,
 
-    var faceX =
-        x + (w - faceWidth) / 2;
+        bitmap.width,
 
-    var faceY =
-        y + (h - faceHeight) / 2;
+        bitmap.height,
 
-    this.drawActorFace(
+        rect.x,
 
-        actor,
+        rect.y,
 
-        faceX,
+        rect.width -1,
 
-        faceY,
-
-        faceWidth,
-
-        faceHeight
+        rect.height -1
 
     );
 
@@ -841,6 +874,6 @@ function(type, value, max, x, y, width) {
 // Plugin Loaded
 //=============================================================================
 
-console.log("SciFi_MenuUI v0.11.0 Loaded");
+console.log("SciFi_MenuUI v0.11.1 Loaded");
 
 })();
