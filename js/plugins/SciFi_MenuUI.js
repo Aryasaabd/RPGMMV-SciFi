@@ -142,7 +142,32 @@ SciFi.MenuUI.Card = {
 
     BorderColor : "#5FD6FF",
 
-    BorderWidth : 5
+    BorderWidth : 5,
+
+    // Jarak vertikal antara kartu dengan tepi atas/bawah window.
+    // Ini yang bikin ada ruang buat background carousel nongol
+    // di atas & bawah kartu.
+    PaddingY : 10
+
+};
+
+//=============================================================================
+// Carousel Background
+//=============================================================================
+
+SciFi.MenuUI.Carousel = {
+
+    FillColor : "rgba(10,14,20,0.5)",
+
+    BorderColor : "rgba(95,214,255,0.5)",
+
+    BorderWidth : 0,
+
+    // Jarak vertikal background ke tepi window. Harus LEBIH KECIL
+    // dari SciFi.MenuUI.Card.PaddingY supaya background kelihatan
+    // lebih tinggi daripada kartu (nongol beberapa pixel di atas
+    // & bawah kartu).
+    PaddingY : 0
 
 };
 
@@ -464,6 +489,51 @@ function() {
 };
 
 //=============================================================================
+// Deteksi Peek Kiri / Kanan
+//=============================================================================
+// Beda dari hasOverflow() — ini ngecek posisi scroll SAAT INI.
+// Di halaman pertama cuma ada peek kanan, di halaman terakhir cuma
+// ada peek kiri, di tengah-tengah ada dua-duanya, dan kalau party
+// gak overflow gak ada peek sama sekali.
+//=============================================================================
+
+Window_MenuStatus.prototype.hasLeftPeek =
+function() {
+
+    if (!this.hasOverflow()) {
+
+        return false;
+
+    }
+
+    var first =
+        this._firstVisibleIndex || 0;
+
+    return first > 0;
+
+};
+
+Window_MenuStatus.prototype.hasRightPeek =
+function() {
+
+    if (!this.hasOverflow()) {
+
+        return false;
+
+    }
+
+    var first =
+        this._firstVisibleIndex || 0;
+
+    var visibleFull =
+        this.maxCols();
+
+    return (first + visibleFull) <
+        $gameParty.members().length;
+
+};
+
+//=============================================================================
 // Card Width
 //=============================================================================
 
@@ -523,15 +593,152 @@ function(index) {
         peek +
         slot * cardWidth;
 
-    rect.y = 0;
+    var paddingY =
+        SciFi.MenuUI.Card.PaddingY;
+
+    rect.y = paddingY;
 
     rect.width =
         cardWidth;
 
     rect.height =
-        this.itemHeight();
+        this.itemHeight() - paddingY * 2;
 
     return rect;
+
+};
+
+//=============================================================================
+// Full Cards Width
+//=============================================================================
+// Lebar area 4 kartu full-visible SAJA, tanpa peek. Ini dipakai
+// sebagai basis, lalu carouselBackgroundRect() yang menambah lebar
+// sesuai peek yang benar-benar ada di posisi scroll saat ini.
+//=============================================================================
+
+Window_MenuStatus.prototype.fullCardsWidth =
+function() {
+
+    return this.cardWidth() * this.maxCols();
+
+};
+
+//=============================================================================
+// Carousel Background Rect
+//=============================================================================
+// Lebar & posisi X background ini menyesuaikan peek yang BENAR-BENAR
+// ada saat ini (bukan asumsi dua-duanya selalu ada):
+// - Gak ada peek sama sekali (party <= maxCols) -> selebar 4 kartu.
+// - Cuma peek kanan (halaman pertama) -> nambah lebar ke kanan aja.
+// - Cuma peek kiri (halaman terakhir) -> nambah lebar ke kiri aja.
+// - Ada dua-duanya (halaman tengah) -> nambah ke kiri & kanan.
+//=============================================================================
+
+Window_MenuStatus.prototype.carouselBackgroundRect =
+function() {
+
+    var rect =
+        new Rectangle();
+
+    var peek =
+        SciFi.MenuUI.peekWidth();
+
+    var leftExtend =
+        this.hasLeftPeek() ? peek : 0;
+
+    var rightExtend =
+        this.hasRightPeek() ? peek : 0;
+
+    // Kartu full selalu digeser sejauh peekWidth() dari tepi kiri
+    // kalau hasOverflow() (lihat cardRect()), terlepas dari apakah
+    // peek kiri itu benar-benar ada di halaman ini. Makanya titik
+    // awal area kartu full ("fullCardsX") dihitung sama seperti di
+    // cardRect(), lalu baru dikurangi/tambah sesuai peek yang nyata.
+
+    var fullCardsX =
+        this.hasOverflow() ? peek : 0;
+
+    var paddingY =
+        SciFi.MenuUI.Carousel.PaddingY;
+
+    rect.x =
+        fullCardsX - leftExtend;
+
+    rect.y = paddingY;
+
+    rect.width =
+        this.fullCardsWidth() +
+        leftExtend +
+        rightExtend;
+
+    rect.height =
+        this.contentsHeight() - paddingY * 2;
+
+    return rect;
+
+};
+
+//=============================================================================
+// Gambar Background Carousel
+//=============================================================================
+// Digambar SEBELUM drawVisibleCards() supaya kartu-kartu menimpa
+// bagian yang overlap, dan background cuma kelihatan di celah
+// atas/bawah (dan di sisi kalau lebarnya lebih besar dari kartu).
+//=============================================================================
+
+Window_MenuStatus.prototype.drawCarouselBackground =
+function() {
+
+    var rect =
+        this.carouselBackgroundRect();
+
+    var cfg =
+        SciFi.MenuUI.Carousel;
+
+    if (cfg.FillColor) {
+
+        this.contents.fillRect(
+            rect.x, rect.y,
+            rect.width, rect.height,
+            cfg.FillColor
+        );
+
+    }
+
+    var w =
+        cfg.BorderWidth;
+
+    if (w > 0 && cfg.BorderColor) {
+
+        // Top
+        this.contents.fillRect(
+            rect.x, rect.y,
+            rect.width, w,
+            cfg.BorderColor
+        );
+
+        // Bottom
+        this.contents.fillRect(
+            rect.x, rect.y + rect.height - w,
+            rect.width, w,
+            cfg.BorderColor
+        );
+
+        // Left
+        this.contents.fillRect(
+            rect.x, rect.y,
+            w, rect.height,
+            cfg.BorderColor
+        );
+
+        // Right
+        this.contents.fillRect(
+            rect.x + rect.width - w, rect.y,
+            w, rect.height,
+            cfg.BorderColor
+        );
+
+    }
 
 };
 
@@ -677,6 +884,8 @@ Window_MenuStatus.prototype.refresh =
 function() {
 
     this.contents.clear();
+
+    this.drawCarouselBackground();
 
     this.drawVisibleCards();
 
@@ -1585,12 +1794,17 @@ function() {
 };
 
 //=============================================================================
-// Nonaktifkan wrap-around ke aktor pertama
+// Nonaktifkan wrap-around (kiri & kanan)
 //=============================================================================
-// Bawaan MV: kalau di kartu terakhir lalu tombol kanan DIPENCET
-// (bukan ditahan), dia otomatis muter balik ke index 0. Di sini
-// itu dimatikan — kartu terakhir + kanan lagi = diam di tempat,
-// harus lewat tombol kiri untuk balik.
+// Bawaan MV: kalau di kartu ujung lalu tombol arah DIPENCET (bukan
+// ditahan), dia otomatis muter balik ke ujung yang lain. Ini karena
+// wrap cuma dicek pakai Input.isTriggered (true di awal pencet baru,
+// termasuk kalau tombol dilepas dulu lalu dipencet lagi persis pas
+// di kartu ujung) — beda dengan Input.isRepeated yang dipakai untuk
+// jalan terus saat ditahan. Makanya "hold sampai ujung" kelihatan
+// gak wrap, tapi "lepas lalu pencet lagi pas di ujung" masih wrap.
+// Di sini wrap dimatikan total untuk dua arah: kartu terakhir +
+// kanan = diam, kartu pertama + kiri = diam.
 //=============================================================================
 
 Window_MenuStatus.prototype.cursorRight =
@@ -1608,6 +1822,23 @@ function(wrap) {
     if (maxCols >= 2 && index < maxItems - 1) {
 
         this.select(index + 1);
+
+    }
+
+};
+
+Window_MenuStatus.prototype.cursorLeft =
+function(wrap) {
+
+    var index =
+        this.index();
+
+    var maxCols =
+        this.maxCols();
+
+    if (maxCols >= 2 && index > 0) {
+
+        this.select(index - 1);
 
     }
 
