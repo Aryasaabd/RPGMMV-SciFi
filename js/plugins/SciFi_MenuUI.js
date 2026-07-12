@@ -425,22 +425,7 @@ Window_MenuStatus.prototype.numVisibleRows = function() {
 
 Window_MenuStatus.prototype.itemWidth = function() {
 
-    var totalWidth =
-        this.contentsWidth();
-
-    var spacing =
-        this.spacing();
-
-    var cols =
-        this.maxCols();
-
-    return Math.floor(
-
-        (totalWidth - spacing * (cols - 1))
-
-        / cols
-
-    );
+    return this.cardWidth();
 
 };
 
@@ -456,11 +441,109 @@ Window_MenuStatus.prototype.spacing = function() {
 
 };
 
+//=============================================================================
+// Peek (sliver kartu tetangga di tepi window)
+//=============================================================================
+
+SciFi.MenuUI.peekWidth = function() {
+
+    return 14;
+
+};
+
+//=============================================================================
+// Overflow Check
+//=============================================================================
+
+Window_MenuStatus.prototype.hasOverflow =
+function() {
+
+    return $gameParty.members().length >
+        this.maxCols();
+
+};
+
+//=============================================================================
+// Card Width
+//=============================================================================
+
+Window_MenuStatus.prototype.cardWidth =
+function() {
+
+    var totalWidth =
+        this.contentsWidth();
+
+    var cols =
+        this.maxCols();
+
+    if (this.hasOverflow()) {
+
+        var peek =
+            SciFi.MenuUI.peekWidth() * 2;
+
+        return Math.floor(
+            (totalWidth - peek) / cols
+        );
+
+    }
+
+    return Math.floor(totalWidth / cols);
+
+};
+
+//=============================================================================
+// Card Rect
+//=============================================================================
+// "index" di sini SELALU index aktor yang sesungguhnya di $gameParty
+// (sama seperti this.index()), BUKAN slot 0..3. Ini penting supaya
+// posisi kartu yang digambar dan posisi kursor selalu sinkron.
+//=============================================================================
+
+Window_MenuStatus.prototype.cardRect =
+function(index) {
+
+    var rect = new Rectangle();
+
+    var first =
+        this._firstVisibleIndex || 0;
+
+    // Slot relatif terhadap kartu pertama yang full-visible.
+    // Bisa -1 (peek kiri) sampai maxCols() (peek kanan).
+    var slot =
+        index - first;
+
+    var cardWidth =
+        this.cardWidth();
+
+    var peek =
+        this.hasOverflow() ?
+        SciFi.MenuUI.peekWidth() : 0;
+
+    rect.x =
+        peek +
+        slot * cardWidth;
+
+    rect.y = 0;
+
+    rect.width =
+        cardWidth;
+
+    rect.height =
+        this.itemHeight();
+
+    return rect;
+
+};
+
+//=============================================================================
+// Draw Item Background
+//=============================================================================
+
 Window_MenuStatus.prototype.drawItemBackground =
 function(index) {
 
     var rect =
-        this.itemRect(index);
+        this.cardRect(index);
 
     //------------------------------------------
     // Selection
@@ -519,6 +602,10 @@ function(index) {
 Window_MenuStatus.prototype.drawItem =
 function(index) {
 
+    // "index" = index aktor asli di $gameParty, sama dengan
+    // yang dipakai this.index() dan cardRect(). Jangan ditambah
+    // _firstVisibleIndex lagi di sini.
+
     var actor =
         $gameParty.members()[index];
 
@@ -529,7 +616,7 @@ function(index) {
     }
 
     var rect =
-        this.itemRect(index);
+        this.cardRect(index);
 
     //------------------------------------------
     // Background
@@ -548,6 +635,52 @@ function(index) {
         rect
 
     );
+
+};
+
+//=============================================================================
+// Draw Visible Cards
+//=============================================================================
+
+Window_MenuStatus.prototype.drawVisibleCards =
+function() {
+
+    var first =
+        this._firstVisibleIndex || 0;
+
+    var visibleFull =
+        this.maxCols();
+
+    // Gambar 1 slot ekstra di kiri & kanan untuk efek "peek".
+    // Kalau tidak overflow, peekWidth() = 0 jadi ini otomatis
+    // tidak kelihatan (dan drawItem akan return lebih awal
+    // kalau actor-nya tidak ada).
+
+    var startIndex =
+        first - 1;
+
+    var endIndex =
+        first + visibleFull;
+
+    for (var i = startIndex; i <= endIndex; i++) {
+
+        this.drawItem(i);
+
+    }
+
+};
+
+var SciFi_MenuUI_WindowMenuStatus_refresh =
+    Window_MenuStatus.prototype.refresh;
+
+Window_MenuStatus.prototype.refresh =
+function() {
+
+    this.contents.clear();
+
+    this.drawVisibleCards();
+
+    this.refreshCarouselCursor();
 
 };
 
@@ -1144,6 +1277,343 @@ function(type, value, max, x, y, width) {
 };
 
 //=============================================================================
+// Matikan auto-scroll vertikal bawaan Window_Selectable
+//=============================================================================
+// Window_Selectable bawaan MV memanggil ensureCursorVisible() setiap
+// select(), yang otomatis menggeser origin.y berdasarkan baris
+// (index / maxCols). Karena itemHeight() di plugin ini = tinggi
+// window penuh (dipakai untuk 1 baris kartu), auto-scroll itu malah
+// menggeser seluruh isi window keluar layar begitu index masuk
+// "baris" ke-2 — inilah yang menyebabkan tampilan seperti
+// "loncat ke page lain". Carousel horizontal di plugin ini
+// ditangani manual lewat _firstVisibleIndex, jadi auto-scroll
+// bawaan harus dinonaktifkan.
+//=============================================================================
+
+Window_MenuStatus.prototype.ensureCursorVisible =
+function() {
+
+    // Sengaja dikosongkan.
+
+};
+
+//=============================================================================
+// Update Viewport Carousel
+//=============================================================================
+
+Window_MenuStatus.prototype.updateCarouselViewport =
+function() {
+
+    if (this._firstVisibleIndex === undefined) {
+
+        this._firstVisibleIndex = 0;
+
+    }
+
+    var index =
+        this.index();
+
+    if (index < 0) {
+
+        return;
+
+    }
+
+    var visibleFull =
+        this.maxCols();
+
+    //------------------------------------------
+    // Geser supaya index yang dipilih selalu
+    // berada di dalam rentang full-visible
+    //------------------------------------------
+
+    if (index < this._firstVisibleIndex) {
+
+        this._firstVisibleIndex = index;
+
+    } else if (index >
+        this._firstVisibleIndex + visibleFull - 1) {
+
+        this._firstVisibleIndex =
+            index - visibleFull + 1;
+
+    }
+
+    //------------------------------------------
+    // Clamp supaya tidak ada ruang kosong
+    // di ujung kanan
+    //------------------------------------------
+
+    var maxFirst =
+        Math.max(
+            0,
+            $gameParty.members().length - visibleFull
+        );
+
+    if (this._firstVisibleIndex > maxFirst) {
+
+        this._firstVisibleIndex = maxFirst;
+
+    }
+
+    if (this._firstVisibleIndex < 0) {
+
+        this._firstVisibleIndex = 0;
+
+    }
+
+};
+
+var SciFi_MenuUI_WindowMenuStatus_select =
+    Window_MenuStatus.prototype.select;
+
+Window_MenuStatus.prototype.select =
+function(index) {
+
+    SciFi_MenuUI_WindowMenuStatus_select.call(
+        this,
+        index
+    );
+
+    if (index >= 0) {
+
+        this.updateCarouselViewport();
+
+    }
+
+    this.refresh();
+
+};
+
+//=============================================================================
+// Item Rect (dipakai untuk posisi kursor)
+//=============================================================================
+// Override ini WAJIB ada: Window_Selectable bawaan menghitung rect
+// kursor sendiri berdasarkan (index, maxCols, itemWidth, itemHeight)
+// tanpa tahu soal _firstVisibleIndex atau area peek. Dengan
+// menyamakan itemRect ke cardRect, kursor dijamin selalu berada
+// tepat di kartu yang sama dengan yang digambar.
+//=============================================================================
+
+Window_MenuStatus.prototype.itemRect =
+function(index) {
+
+    return this.cardRect(index);
+
+};
+
+//=============================================================================
+// Cursor Kustom (blink konsisten di semua posisi carousel)
+//=============================================================================
+// Cursor blink bawaan MV adalah sprite yang di-render DI BELAKANG
+// contents (gambar kartu). Untuk kartu dengan background semi-transparan
+// itu masih agak kelihatan nembus, tapi hasilnya gak konsisten di semua
+// posisi. Solusinya: bikin sprite cursor sendiri yang ditaruh DI ATAS
+// kartu, jadi blink-nya konsisten di manapun kartu itu berada, termasuk
+// yang baru kelihatan setelah carousel geser.
+//=============================================================================
+
+var SciFi_MenuUI_WindowMenuStatus_initialize =
+    Window_MenuStatus.prototype.initialize;
+
+Window_MenuStatus.prototype.initialize =
+function(x, y, width, height) {
+
+    SciFi_MenuUI_WindowMenuStatus_initialize.call(
+        this, x, y, width, height
+    );
+
+    this._sciFiCursorSprite =
+        new Sprite(new Bitmap(1, 1));
+
+    this.addChild(this._sciFiCursorSprite);
+
+};
+
+//------------------------------------------
+// Matikan cursor bawaan MV untuk window ini
+//------------------------------------------
+
+Window_MenuStatus.prototype.setCursorRect =
+function() {
+
+    // Sengaja dikosongkan — diganti cursor kustom di bawah.
+
+};
+
+//------------------------------------------
+// Offset cursor kustom
+//------------------------------------------
+
+SciFi.MenuUI.Cursor = {
+
+    OffsetX : 18,
+
+    OffsetY : 18
+
+};
+
+//------------------------------------------
+// Gambar ulang cursor kustom sesuai posisi kartu terpilih
+//------------------------------------------
+
+Window_MenuStatus.prototype.refreshCarouselCursor =
+function() {
+
+    if (!this._sciFiCursorSprite) {
+
+        return;
+
+    }
+
+    if (this.index() < 0) {
+
+        this._sciFiCursorSprite.visible = false;
+
+        return;
+
+    }
+
+    var rect =
+        this.cardRect(this.index());
+
+    var w = 6;
+
+    var c = "rgba(255, 251, 214, 0.8)";
+
+    var bitmap =
+        new Bitmap(rect.width, rect.height);
+
+    // Top
+    bitmap.fillRect(0, 0, rect.width, w, c);
+
+    // Bottom
+    bitmap.fillRect(0, rect.height - w, rect.width, w, c);
+
+    // Left
+    bitmap.fillRect(0, 0, w, rect.height, c);
+
+    // Right
+    bitmap.fillRect(rect.width - w, 0, w, rect.height, c);
+
+    // Midline highlight (buat efek "glow" di tengah border)
+
+    bitmap.fillRect(
+
+        w,
+
+        w,
+
+        bitmap.width - w * 2,
+
+        bitmap.height - w * 2,
+
+        "rgba(255,255,255,0.12)"
+
+    );
+
+    this._sciFiCursorSprite.bitmap =
+        bitmap;
+
+    this._sciFiCursorSprite.x =
+        rect.x +
+        SciFi.MenuUI.Cursor.OffsetX;
+
+    this._sciFiCursorSprite.y =
+        rect.y +
+        SciFi.MenuUI.Cursor.OffsetY;
+
+    this._sciFiCursorSprite.visible = true;
+
+};
+
+//------------------------------------------
+// Animasi blink (pakai counter yang sama dengan
+// cursor bawaan MV, biar kecepatan kedapnya identik)
+//------------------------------------------
+
+var SciFi_MenuUI_WindowMenuStatus_update =
+    Window_MenuStatus.prototype.update;
+
+Window_MenuStatus.prototype.update =
+function() {
+
+    SciFi_MenuUI_WindowMenuStatus_update.call(this);
+
+    this.updateCarouselCursorBlink();
+
+};
+
+Window_MenuStatus.prototype.updateCarouselCursorBlink =
+function() {
+
+    if (!this._sciFiCursorSprite) {
+
+        return;
+
+    }
+
+    if (this.index() < 0) {
+
+        this._sciFiCursorSprite.visible = false;
+
+        return;
+
+    }
+
+    var blinkCount =
+        this._animationCount % 40;
+
+    var opacity = 255;
+
+    if (blinkCount < 20) {
+
+        opacity -= blinkCount * 8;
+
+    } else {
+
+        opacity -= (40 - blinkCount) * 8;
+
+    }
+
+    this._sciFiCursorSprite.visible =
+        this.isOpen();
+
+    this._sciFiCursorSprite.opacity =
+        this.active ? opacity : 128;
+
+};
+
+//=============================================================================
+// Nonaktifkan wrap-around ke aktor pertama
+//=============================================================================
+// Bawaan MV: kalau di kartu terakhir lalu tombol kanan DIPENCET
+// (bukan ditahan), dia otomatis muter balik ke index 0. Di sini
+// itu dimatikan — kartu terakhir + kanan lagi = diam di tempat,
+// harus lewat tombol kiri untuk balik.
+//=============================================================================
+
+Window_MenuStatus.prototype.cursorRight =
+function(wrap) {
+
+    var index =
+        this.index();
+
+    var maxItems =
+        this.maxItems();
+
+    var maxCols =
+        this.maxCols();
+
+    if (maxCols >= 2 && index < maxItems - 1) {
+
+        this.select(index + 1);
+
+    }
+
+};
+
+//=============================================================================
 // Apply Menu Window
 //=============================================================================
 
@@ -1191,6 +1661,6 @@ function() {
 // Plugin Loaded
 //=============================================================================
 
-console.log("SciFi_MenuUI v0.11.4 Loaded");
+console.log("SciFi_MenuUI v0.13.0 Loaded");
 
 })();
