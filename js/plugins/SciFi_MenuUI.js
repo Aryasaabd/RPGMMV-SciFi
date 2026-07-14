@@ -91,7 +91,7 @@ SciFi.MenuUI.ControlHints = {
 
     TextColor : "#FFFFFF",
 
-    KeyColor : "#5FD6FF",
+    KeyColor : "#fff9df",
 
     X : 20,
 
@@ -140,7 +140,7 @@ SciFi.MenuUI.Card = {
 
     BackgroundColor : "rgba(15,20,30,0.45)",
 
-    BorderColor : "#5FD6FF",
+    BorderColor : "#fff9df",
 
     BorderWidth : 5,
 
@@ -157,11 +157,11 @@ SciFi.MenuUI.Card = {
 
 SciFi.MenuUI.Carousel = {
 
-    FillColor : "rgba(10,14,20,0.5)",
+    FillColor : "rgba(133, 133, 133, 0.2)",
 
-    BorderColor : "rgba(95,214,255,0.5)",
+    BorderColor : "#fff9df",
 
-    BorderWidth : 0,
+    BorderWidth : 1,
 
     // Jarak vertikal background ke tepi window. Harus LEBIH KECIL
     // dari SciFi.MenuUI.Card.PaddingY supaya background kelihatan
@@ -177,13 +177,13 @@ SciFi.MenuUI.Carousel = {
 
 SciFi.MenuUI.Window = {
 
-    BackgroundColor : "rgba(15,20,30,0.45)",
+    BackgroundColor : "#0f0f0fd8",
 
-    BorderColor : "#5FD6FF",
+    BorderColor : "#fff9df",
 
     BorderWidth : 2,
 
-    Opacity : 0.45
+    Opacity : 0.8
 
 };
 
@@ -255,15 +255,15 @@ function(window) {
         SciFi.MenuUI.Window.BorderColor;
 
     bitmap.fillRect(
-        0,0,
-        window.width,bw,
+        6,6,
+        window.width-12,bw,
         bc
     );
 
     bitmap.fillRect(
-        0,
-        window.height-bw,
-        window.width,
+        6,
+        window.height-bw-6,
+        window.width-12,
         bw,
         bc
     );
@@ -271,19 +271,19 @@ function(window) {
     // Left
 
     bitmap.fillRect(
-        0,0,
+        6,6,
         bw,
-        window.height,
+        window.height-12,
         bc
     );
 
     // Right
 
     bitmap.fillRect(
-        window.width-bw,
-        0,
+        window.width-bw-6,
+        6,
         bw,
-        window.height,
+        window.height-12,
         bc
     );
 
