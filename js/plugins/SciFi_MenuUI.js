@@ -172,6 +172,51 @@ SciFi.MenuUI.Carousel = {
 };
 
 //=============================================================================
+// Carousel Peek Arrows
+//=============================================================================
+
+SciFi.MenuUI.Arrow = {
+
+    Color : "#5FD6FF",
+
+    Width : 12,
+
+    Height : 20,
+
+    // Jarak dari tepi kiri/kanan window
+    Margin : 4
+
+};
+
+//=============================================================================
+// Carousel Fade (vignette hitam ke arah peek)
+//=============================================================================
+
+SciFi.MenuUI.CarouselFade = {
+
+    // Warna di tepi kiri & kanan (arah peek)
+    EdgeColor : "rgba(0,0,0,0.5)",
+
+    // Warna di tengah
+    CenterColor : "rgba(0,0,0,0)"
+
+};
+
+//=============================================================================
+// Anggota Cadangan (non-battle)
+//=============================================================================
+
+SciFi.MenuUI.Reserve = {
+
+    // Digambar di atas kartu anggota yang index-nya >=
+    // $gameParty.maxBattleMembers() (biasanya 4). Pakai hitam
+    // semi-transparan supaya kartu "keliatan gelap" tapi masih
+    // kebaca isinya.
+    OverlayColor : "rgba(0,0,0,0.55)"
+
+};
+
+//=============================================================================
 // Window
 //=============================================================================
 
@@ -743,6 +788,85 @@ function() {
 };
 
 //=============================================================================
+// Gambar Fade/Vignette Carousel
+//=============================================================================
+// Gradient 3-stop (hitam di kedua ujung, transparan di tengah).
+// Digambar SETELAH kartu (drawVisibleCards) supaya nutupi kartu di
+// bagian tepi, tapi TETAP di dalam this.contents — jadi otomatis
+// ada di bawah cursor kustom (yang sprite terpisah, selalu render
+// paling atas).
+//
+// Lebar/tinggi ngikutin carouselBackgroundRect() persis, jadi kalau
+// lebar background berubah (peek kiri/kanan aktif/nonaktif), fade
+// ini otomatis ikut menyesuaikan juga.
+//=============================================================================
+
+Window_MenuStatus.prototype.drawCarouselFade =
+function() {
+
+    var rect =
+        this.carouselBackgroundRect();
+
+    if (rect.width <= 0 || rect.height <= 0) {
+
+        return;
+
+    }
+
+    var hasLeft =
+        this.hasLeftPeek();
+
+    var hasRight =
+        this.hasRightPeek();
+
+    // Gak ada peek sama sekali -> gak usah gambar apa-apa.
+    if (!hasLeft && !hasRight) {
+
+        return;
+
+    }
+
+    var cfg =
+        SciFi.MenuUI.CarouselFade;
+
+    // Ujung yang gak ada peek-nya disamain sama warna tengah,
+    // jadi otomatis "hilang" (gak ada fade) di sisi itu.
+    var leftColor =
+        hasLeft ? cfg.EdgeColor : cfg.CenterColor;
+
+    var rightColor =
+        hasRight ? cfg.EdgeColor : cfg.CenterColor;
+
+    var ctx =
+        this.contents._context;
+
+    var gradient =
+        ctx.createLinearGradient(
+            rect.x, 0,
+            rect.x + rect.width, 0
+        );
+
+    gradient.addColorStop(0, leftColor);
+    gradient.addColorStop(0.05, cfg.CenterColor);
+    gradient.addColorStop(0.95, cfg.CenterColor);
+    gradient.addColorStop(1, rightColor);
+
+    ctx.save();
+
+    ctx.fillStyle = gradient;
+
+    ctx.fillRect(
+        rect.x, rect.y,
+        rect.width, rect.height
+    );
+
+    ctx.restore();
+
+    this.contents._setDirty();
+
+};
+
+//=============================================================================
 // Draw Item Background
 //=============================================================================
 
@@ -843,6 +967,34 @@ function(index) {
 
     );
 
+    //------------------------------------------
+    // Overlay gelap untuk anggota di luar slot battle
+    //------------------------------------------
+
+    if (index >= $gameParty.maxBattleMembers()) {
+
+        this.drawReserveOverlay(rect);
+
+    }
+
+};
+
+//=============================================================================
+// Overlay Anggota Cadangan (non-battle)
+//=============================================================================
+
+Window_MenuStatus.prototype.drawReserveOverlay =
+function(rect) {
+
+    var cfg =
+        SciFi.MenuUI.Reserve;
+
+    this.contents.fillRect(
+        rect.x, rect.y,
+        rect.width, rect.height,
+        cfg.OverlayColor
+    );
+
 };
 
 //=============================================================================
@@ -889,7 +1041,11 @@ function() {
 
     this.drawVisibleCards();
 
+    this.drawCarouselFade();
+
     this.refreshCarouselCursor();
+
+    this.refreshCarouselArrows();
 
 };
 
@@ -1637,6 +1793,119 @@ function(x, y, width, height) {
 
     this.addChild(this._sciFiCursorSprite);
 
+        this.createCarouselArrows();
+
+};
+
+//------------------------------------------
+// Bikin sprite segitiga isyarat peek kiri/kanan
+//------------------------------------------
+
+Window_MenuStatus.prototype.createCarouselArrows =
+function() {
+
+    var cfg =
+        SciFi.MenuUI.Arrow;
+
+    this._sciFiLeftArrowSprite =
+        new Sprite(
+            this.createArrowBitmap(cfg, "left")
+        );
+
+    this._sciFiRightArrowSprite =
+        new Sprite(
+            this.createArrowBitmap(cfg, "right")
+        );
+
+    this.addChild(this._sciFiLeftArrowSprite);
+
+    this.addChild(this._sciFiRightArrowSprite);
+
+};
+
+Window_MenuStatus.prototype.createArrowBitmap =
+function(cfg, direction) {
+
+    var bitmap =
+        new Bitmap(cfg.Width, cfg.Height);
+
+    var ctx =
+        bitmap._context;
+
+    ctx.fillStyle =
+        cfg.Color;
+
+    ctx.beginPath();
+
+    if (direction === "right") {
+
+        ctx.moveTo(0, 0);
+        ctx.lineTo(cfg.Width, cfg.Height / 2);
+        ctx.lineTo(0, cfg.Height);
+
+    } else {
+
+        ctx.moveTo(cfg.Width, 0);
+        ctx.lineTo(0, cfg.Height / 2);
+        ctx.lineTo(cfg.Width, cfg.Height);
+
+    }
+
+    ctx.closePath();
+
+    ctx.fill();
+
+    bitmap._setDirty();
+
+    return bitmap;
+
+};
+
+//------------------------------------------
+// Update posisi & visibility panah tiap refresh
+//------------------------------------------
+// Catatan posisi: sprite ini ditambahkan langsung ke window (bukan
+// ke this.contents), jadi koordinatnya masih dalam ruang window utuh,
+// BUKAN ruang contents. Makanya perlu ditambah this.padding supaya
+// sejajar dengan tepi contents (sama kayak kenapa cursor kustom
+// kemarin perlu di-offset manual).
+//------------------------------------------
+
+Window_MenuStatus.prototype.refreshCarouselArrows =
+function() {
+
+    if (!this._sciFiLeftArrowSprite) {
+
+        return;
+
+    }
+
+    var cfg =
+        SciFi.MenuUI.Arrow;
+
+    var y =
+        this.padding +
+        (this.contentsHeight() - cfg.Height) / 2;
+
+    this._sciFiLeftArrowSprite.x =
+        this.padding + cfg.Margin;
+
+    this._sciFiLeftArrowSprite.y = y;
+
+    this._sciFiLeftArrowSprite.visible =
+        this.hasLeftPeek();
+
+    this._sciFiRightArrowSprite.x =
+        this.padding +
+        this.contentsWidth() -
+        cfg.Width -
+        cfg.Margin;
+
+    this._sciFiRightArrowSprite.y = y;
+
+    this._sciFiRightArrowSprite.visible =
+        this.hasRightPeek();
+
 };
 
 //------------------------------------------
@@ -1750,6 +2019,14 @@ function() {
     SciFi_MenuUI_WindowMenuStatus_update.call(this);
 
     this.updateCarouselCursorBlink();
+
+    // Matikan arrow atas-bawah bawaan MV. Ini perlu dipaksa tiap
+    // frame (bukan cukup sekali) karena base class Window
+    // menghitung ulang downArrowVisible/upArrowVisible sendiri
+    // setiap update() — di sini nilainya ditimpa balik ke false
+    // SETELAH base update jalan.
+    this.downArrowVisible = false;
+    this.upArrowVisible = false;
 
 };
 
