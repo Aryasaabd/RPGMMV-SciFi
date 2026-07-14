@@ -140,7 +140,7 @@ SciFi.MenuUI.Card = {
 
     BackgroundColor : "rgba(15,20,30,0.45)",
 
-    BorderColor : "#fff9df",
+    BorderColor : "#b8aa96",
 
     BorderWidth : 5,
 
@@ -177,7 +177,7 @@ SciFi.MenuUI.Carousel = {
 
 SciFi.MenuUI.Arrow = {
 
-    Color : "#5FD6FF",
+    Color : "#fff9df",
 
     Width : 12,
 
@@ -222,13 +222,34 @@ SciFi.MenuUI.Reserve = {
 
 SciFi.MenuUI.Window = {
 
-    BackgroundColor : "#0f0f0fd8",
+    BackgroundColor : "#090a0c",
 
-    BorderColor : "#fff9df",
+    BorderColor : "#2c1b20",
 
     BorderWidth : 2,
 
     Opacity : 0.8
+
+};
+
+//=============================================================================
+// Window Frame (lapisan tengah antara background & border)
+//=============================================================================
+// Bentuknya kayak "border tebal" yang punya lubang segi empat di
+// tengah, jadi background window masih keliatan lewat lubang itu.
+// Warnanya gradasi atas-bawah (TopColor -> BottomColor).
+//=============================================================================
+
+SciFi.MenuUI.WindowFrame = {
+
+    // Ketebalan frame. Set ke 0 untuk mematikan lapisan ini.
+    Width : 18,
+
+    TopColor : "#a19b91",
+
+    MiddleColor : "#8B857C",
+
+    BottomColor : "#746F67"
 
 };
 
@@ -290,11 +311,81 @@ function(window) {
     );
 
     //------------------------------------------
-    // Border
+    // Frame (lapisan tengah, gradient atas-bawah,
+    // punya "lubang" segi empat di tengah supaya
+    // background tetap keliatan lewat lubang itu)
     //------------------------------------------
 
     var bw =
         SciFi.MenuUI.Window.BorderWidth;
+
+    var fw =
+        SciFi.MenuUI.WindowFrame.Width;
+
+    if (fw > 0) {
+
+        var frameCtx =
+            bitmap._context;
+
+        var frameGradient =
+            frameCtx.createLinearGradient(
+                0, 0,
+                0, window.height
+            );
+
+        frameGradient.addColorStop(
+            0, SciFi.MenuUI.WindowFrame.TopColor
+        );
+
+        frameGradient.addColorStop(
+            0.3, SciFi.MenuUI.WindowFrame.MiddleColor
+        );
+
+                frameGradient.addColorStop(
+            0.7, SciFi.MenuUI.WindowFrame.MiddleColor
+        );
+
+        frameGradient.addColorStop(
+            1, SciFi.MenuUI.WindowFrame.BottomColor
+        );
+
+        frameCtx.save();
+
+        frameCtx.fillStyle = frameGradient;
+
+        // Top
+        frameCtx.fillRect(
+            0, 0,
+            window.width, fw
+        );
+
+        // Bottom
+        frameCtx.fillRect(
+            0, window.height - fw,
+            window.width, fw
+        );
+
+        // Left
+        frameCtx.fillRect(
+            0, 0,
+            fw, window.height
+        );
+
+        // Right
+        frameCtx.fillRect(
+            window.width - fw, 0,
+            fw, window.height
+        );
+
+        frameCtx.restore();
+
+        bitmap._setDirty();
+
+    }
+
+    //------------------------------------------
+    // Border
+    //------------------------------------------
 
     var bc =
         SciFi.MenuUI.Window.BorderColor;
