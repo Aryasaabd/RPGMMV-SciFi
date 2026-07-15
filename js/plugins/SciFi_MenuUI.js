@@ -2146,7 +2146,7 @@ function() {
     var rect =
         this.cardRect(this.index());
 
-    var w = 6;
+    var w = 7;
 
     var c = "rgba(255, 251, 214, 0.8)";
 
@@ -2154,10 +2154,10 @@ function() {
         new Bitmap(rect.width, rect.height);
 
     // Top
-    bitmap.fillRect(0, 0, rect.width, w, c);
+    bitmap.fillRect(7, 0, rect.width - 14, w, c);
 
     // Bottom
-    bitmap.fillRect(0, rect.height - w, rect.width, w, c);
+    bitmap.fillRect(7, rect.height - w, rect.width - 14, w, c);
 
     // Left
     bitmap.fillRect(0, 0, w, rect.height, c);
