@@ -140,9 +140,14 @@ SciFi.MenuUI.Card = {
 
     BackgroundColor : "rgba(15,20,30,0.45)",
 
-    BorderColor : "#b8aa96",
+    // Border luar
+    OuterBorderColor : "#8B857C",
+    OuterBorderWidth : 7,
 
-    BorderWidth : 5,
+    // Border dalam
+    InnerBorderColor : "rgb(44,27,32)",
+    InnerBorderWidth : 2,
+    InnerBorderOffset : 4,
 
     // Jarak vertikal antara kartu dengan tepi atas/bawah window.
     // Ini yang bikin ada ruang buat background carousel nongol
@@ -157,11 +162,11 @@ SciFi.MenuUI.Card = {
 
 SciFi.MenuUI.Carousel = {
 
-    FillColor : "rgba(133, 133, 133, 0.2)",
+    FillColor : "rgba(9, 10, 12, 0.2)",
 
-    BorderColor : "#fff9df",
+    BorderColor : "#8B857C",
 
-    BorderWidth : 1,
+    BorderWidth : 4,
 
     // Jarak vertikal background ke tepi window. Harus LEBIH KECIL
     // dari SciFi.MenuUI.Card.PaddingY supaya background kelihatan
@@ -203,6 +208,23 @@ SciFi.MenuUI.CarouselFade = {
 };
 
 //=============================================================================
+// Carousel Peek Filler
+//=============================================================================
+// Ngisi zona peek yang lagi KOSONG (gak ada kartu tetangga di sisi
+// itu) dengan warna beda dari background biasa. Kalau kedua sisi
+// ada peek, ini gak digambar sama sekali (gak ada zona kosong buat
+// diisi). Kalau party <= maxCols (gak overflow), zona peek juga gak
+// pernah direservasi ruangnya sama sekali, jadi ini otomatis gak
+// kelihatan juga di kondisi itu.
+//=============================================================================
+
+SciFi.MenuUI.CarouselPeekFiller = {
+
+    Color : "#8B857C"
+
+};
+
+//=============================================================================
 // Anggota Cadangan (non-battle)
 //=============================================================================
 
@@ -222,7 +244,7 @@ SciFi.MenuUI.Reserve = {
 
 SciFi.MenuUI.Window = {
 
-    BackgroundColor : "#090a0c",
+    BackgroundColor : "rgba(9, 10, 12, 0.8)",
 
     BorderColor : "#2c1b20",
 
@@ -484,46 +506,86 @@ function(rect) {
 Window_MenuStatus.prototype.drawCardBorder =
 function(rect) {
 
-    var w = SciFi.MenuUI.Card.BorderWidth;
-
-    var c = SciFi.MenuUI.Card.BorderColor;
-
+    var cfg = SciFi.MenuUI.Card;
     var pad = 1;
 
-    // Top
+    //------------------------------------------
+    // Outer Border
+    //------------------------------------------
+
+    var ow = cfg.OuterBorderWidth;
+    var oc = cfg.OuterBorderColor;
+
     this.contents.fillRect(
         rect.x + pad,
         rect.y + pad,
         rect.width - pad * 2,
-        w,
-        c
+        ow,
+        oc
     );
 
-    // Bottom
     this.contents.fillRect(
         rect.x + pad,
-        rect.y + rect.height - w - pad,
+        rect.y + rect.height - ow - pad,
         rect.width - pad * 2,
-        w,
-        c
+        ow,
+        oc
     );
 
-    // Left
     this.contents.fillRect(
         rect.x + pad,
         rect.y + pad,
-        w,
+        ow,
         rect.height - pad * 2,
-        c
+        oc
     );
 
-    // Right
     this.contents.fillRect(
-        rect.x + rect.width - w - pad,
+        rect.x + rect.width - ow - pad,
         rect.y + pad,
-        w,
+        ow,
         rect.height - pad * 2,
-        c
+        oc
+    );
+
+    //------------------------------------------
+    // Inner Border
+    //------------------------------------------
+
+    var offset = cfg.InnerBorderOffset;
+    var iw = cfg.InnerBorderWidth;
+    var ic = cfg.InnerBorderColor;
+
+    this.contents.fillRect(
+        rect.x + offset,
+        rect.y + offset,
+        rect.width - offset * 2,
+        iw,
+        ic
+    );
+
+    this.contents.fillRect(
+        rect.x + offset,
+        rect.y + rect.height - offset - iw,
+        rect.width - offset * 2,
+        iw,
+        ic
+    );
+
+    this.contents.fillRect(
+        rect.x + offset,
+        rect.y + offset,
+        iw,
+        rect.height - offset * 2,
+        ic
+    );
+
+    this.contents.fillRect(
+        rect.x + rect.width - offset - iw,
+        rect.y + offset,
+        iw,
+        rect.height - offset * 2,
+        ic
     );
 
 };
@@ -860,18 +922,54 @@ function() {
             cfg.BorderColor
         );
 
-        // Left
+    }
+
+};
+
+//=============================================================================
+// Gambar Filler Zona Peek yang Kosong
+//=============================================================================
+
+Window_MenuStatus.prototype.drawCarouselPeekFiller =
+function() {
+
+    if (!this.hasOverflow()) {
+
+        return;
+
+    }
+
+    var peek =
+        SciFi.MenuUI.peekWidth();
+
+    var color =
+        SciFi.MenuUI.CarouselPeekFiller.Color;
+
+    var paddingY =
+        SciFi.MenuUI.Carousel.PaddingY;
+
+    var y =
+        paddingY;
+
+    var height =
+        this.contentsHeight() - paddingY * 2;
+
+    if (!this.hasLeftPeek()) {
+
         this.contents.fillRect(
-            rect.x, rect.y,
-            w, rect.height,
-            cfg.BorderColor
+            0, y,
+            peek, height,
+            color
         );
 
-        // Right
+    }
+
+    if (!this.hasRightPeek()) {
+
         this.contents.fillRect(
-            rect.x + rect.width - w, rect.y,
-            w, rect.height,
-            cfg.BorderColor
+            this.contentsWidth() - peek, y,
+            peek, height,
+            color
         );
 
     }
@@ -1129,6 +1227,8 @@ function() {
     this.contents.clear();
 
     this.drawCarouselBackground();
+
+    this.drawCarouselPeekFiller();
 
     this.drawVisibleCards();
 
