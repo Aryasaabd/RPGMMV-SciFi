@@ -1,6 +1,6 @@
 /*:
  * @plugindesc SciFi Armor System v0.2.1
- * @author Arya & ChatGPT
+ * @author
  *
  * @help
  * ============================================================================

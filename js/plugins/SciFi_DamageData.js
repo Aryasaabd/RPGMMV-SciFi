@@ -1,6 +1,6 @@
 /*:
  * @plugindesc SciFi Damage Data v0.2.0
- * @author Arya & ChatGPT
+ * @author
  *
  * @help
  * ============================================================================

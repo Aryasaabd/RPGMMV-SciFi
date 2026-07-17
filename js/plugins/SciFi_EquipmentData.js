@@ -1,6 +1,6 @@
 /*:
  * @plugindesc SciFi Equipment Data v0.4.1
- * @author Arya & ChatGPT
+ * @author
  *
  * @help
  * Internal plugin.

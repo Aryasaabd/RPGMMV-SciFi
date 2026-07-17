@@ -744,18 +744,17 @@ function() {
     var cols =
         this.maxCols();
 
-    if (this.hasOverflow()) {
+    // Selalu reservasi ruang peek di kedua sisi, biar lebar kartu
+    // konsisten sama aja baik pas party <= maxCols (gak overflow)
+    // maupun pas overflow. Celah yang gak kepake (kalau emang gak
+    // ada peek beneran di sisi itu) diisi drawCarouselPeekFiller().
 
-        var peek =
-            SciFi.MenuUI.peekWidth() * 2;
+    var peek =
+        SciFi.MenuUI.peekWidth() * 2;
 
-        return Math.floor(
-            (totalWidth - peek) / cols
-        );
-
-    }
-
-    return Math.floor(totalWidth / cols);
+    return Math.floor(
+        (totalWidth - peek) / cols
+    );
 
 };
 
@@ -784,8 +783,7 @@ function(index) {
         this.cardWidth();
 
     var peek =
-        this.hasOverflow() ?
-        SciFi.MenuUI.peekWidth() : 0;
+        SciFi.MenuUI.peekWidth();
 
     rect.x =
         peek +
@@ -847,14 +845,12 @@ function() {
     var rightExtend =
         this.hasRightPeek() ? peek : 0;
 
-    // Kartu full selalu digeser sejauh peekWidth() dari tepi kiri
-    // kalau hasOverflow() (lihat cardRect()), terlepas dari apakah
-    // peek kiri itu benar-benar ada di halaman ini. Makanya titik
-    // awal area kartu full ("fullCardsX") dihitung sama seperti di
-    // cardRect(), lalu baru dikurangi/tambah sesuai peek yang nyata.
+    // Kartu full sekarang SELALU digeser sejauh peekWidth() dari
+    // tepi kiri (lihat cardRect()), gak peduli overflow atau
+    // enggak, biar lebar kartu konsisten di semua kondisi.
 
     var fullCardsX =
-        this.hasOverflow() ? peek : 0;
+        peek;
 
     var paddingY =
         SciFi.MenuUI.Carousel.PaddingY;
@@ -933,11 +929,10 @@ function() {
 Window_MenuStatus.prototype.drawCarouselPeekFiller =
 function() {
 
-    if (!this.hasOverflow()) {
-
-        return;
-
-    }
+    // Sekarang zona peek SELALU direservasi (lihat cardWidth()),
+    // jadi filler ini perlu jalan juga pas party <= maxCols —
+    // di kondisi itu hasLeftPeek()/hasRightPeek() otomatis false
+    // berdua, jadi filler bakal ngisi kiri & kanan sekaligus.
 
     var peek =
         SciFi.MenuUI.peekWidth();

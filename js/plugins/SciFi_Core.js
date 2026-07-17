@@ -1,6 +1,6 @@
 /*:
  * @plugindesc SciFi Core v0.1.0
- * @author Arya Setyaki Abdillah & OpenAI ChatGPT
+ * @author
  *
  * @help
  * ============================================================================

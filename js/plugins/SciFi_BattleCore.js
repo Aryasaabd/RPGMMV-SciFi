@@ -1,6 +1,6 @@
 /*:
  * @plugindesc SciFi Battle Core v0.4.0
- * @author Arya Setyaki Abdillah & OpenAI ChatGPT
+ * @author
  *
  * @help
  * ============================================================================

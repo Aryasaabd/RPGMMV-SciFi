@@ -1,6 +1,6 @@
 /*:
  * @plugindesc SciFi Armor Piercing System v0.1.1
- * @author Arya & ChatGPT
+ * @author
  *
  * @help
  * ============================================================================

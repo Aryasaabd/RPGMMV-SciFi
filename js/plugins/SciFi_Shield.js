@@ -1,6 +1,6 @@
 /*:
  * @plugindesc SciFi Shield System v0.8.3
- * @author Arya & ChatGPT
+ * @author
  *
  * @param Shielded State ID
  * @type state
