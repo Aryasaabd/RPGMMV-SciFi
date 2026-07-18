@@ -305,7 +305,7 @@ SciFi.Shield.processDamage = function(context) {
 
     const target = context.target;
 	
-	//------------------------------------------------------------
+//------------------------------------------------------------
 	// Shield Element
 	//------------------------------------------------------------
 
@@ -321,17 +321,25 @@ SciFi.Shield.processDamage = function(context) {
 			context.damageData.elementId
 		);
 
+		SciFi.log(
+			"Shield Element"
+			+ " | Element: "
+			+ context.damageData.elementId
+			+ " | Rate: "
+			+ rate
+		);
+
+	} else {
+
+		SciFi.log(
+			"Shield Element"
+			+ " | DamageData not available, using default rate: "
+			+ rate
+		);
+
 	}
 
 	context.shieldElementRate = rate;
-	
-	SciFi.log(
-		"Shield Element"
-		+ " | Element: "
-		+ context.damageData.elementId
-		+ " | Rate: "
-		+ rate
-	);
 
     // Tidak punya shield
 	if (target.shield() <= 0) {
@@ -342,8 +350,8 @@ SciFi.Shield.processDamage = function(context) {
 	// Shield Element Processing
 	//------------------------------------------------------------
 
-	var shield = target.shield();
-	var rate = context.shieldElementRate;
+    var shield = target.shield();
+	rate = context.shieldElementRate;
 
 	// Damage efektif terhadap Shield
 	var effectiveDamage =

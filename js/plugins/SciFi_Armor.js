@@ -38,14 +38,44 @@ SciFi.Armor = SciFi.Armor || {};
 //=============================================================================
 
 /*
- * Returns the current effective armor value.
- * (Temporary: returns database DEF directly)
+ * Reads Armor value from the armor's notetag.
+ *
+ * Example:
+ * <Armor:25>
  */
+SciFi.Armor.baseValue = function(target) {
+
+    var source = null;
+
+    if (target.isActor()) {
+
+        source = SciFi.EquipmentData.armor(target);
+
+    } else {
+
+        source = target.enemy();
+
+    }
+
+    if (!source) {
+        return 0;
+    }
+
+    return Number(source.meta.Armor || 0);
+
+};
+
 SciFi.Armor.value = function(target) {
 
-    var baseArmor = Math.max(0, target.def - 1);
+    var baseArmor = SciFi.Armor.baseValue(target);
 
     if (!Imported.SciFi_Durability) {
+
+		SciFi.log(
+			"Armor Base: " + baseArmor +
+			" | (Durability not installed)"
+		);
+
         return baseArmor;
     }
 

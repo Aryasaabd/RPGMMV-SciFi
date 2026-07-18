@@ -1,6 +1,6 @@
 [
 null,
-{"id":1,"expanded":true,"name":"Starport","order":1,"parentId":0,"scrollX":1622,"scrollY":938},
-{"id":2,"expanded":false,"name":"Saloon","order":2,"parentId":1,"scrollX":1638,"scrollY":922},
+{"id":1,"expanded":true,"name":"Starport","order":1,"parentId":0,"scrollX":1104,"scrollY":938},
+{"id":2,"expanded":false,"name":"Saloon","order":2,"parentId":1,"scrollX":832,"scrollY":640},
 {"id":3,"expanded":true,"name":"MAP003","order":3,"parentId":1,"scrollX":832,"scrollY":640}
 ]
