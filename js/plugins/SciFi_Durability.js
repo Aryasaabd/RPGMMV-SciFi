@@ -72,7 +72,9 @@ Game_Battler.prototype.initSciFiDurability = function() {
         this._scifi = {};
     }
 
-    if (!this._scifi.durability) {
+    // Musuh tetap pakai durability langsung di battler, seperti
+    // sebelumnya, karena musuh tidak punya equipment instance.
+    if (this.isEnemy() && !this._scifi.durability) {
         this._scifi.durability = {};
     }
 
@@ -84,21 +86,51 @@ Game_Battler.prototype.initSciFiDurability = function() {
 // Refresh
 //=============================================================================
 
-Game_Battler.prototype.refreshSciFiDurability = function() {
+/*
+ * Untuk aktor: memastikan instance armor yang sedang terpasang
+ * punya data durability (dibuat sekali saat instance baru lahir).
+ * Dipanggil sebagai extraDataFn saat syncSlotInstance/syncAllSlots
+ * membuat instance baru, supaya durability.max langsung terisi
+ * dari notetag armor sejak awal.
+ */
+SciFi.Durability.buildInstanceExtraData = function(item) {
 
-    var armor = null;
+    var max = SciFi.Durability.maxDurability(item);
+
+    return {
+
+        durability: {
+
+            current: max,
+
+            max: max
+
+        }
+
+    };
+
+};
+
+Game_Battler.prototype.refreshSciFiDurability = function() {
 
     if (this.isActor()) {
 
-        armor =
-            SciFi.EquipmentData.armor(this);
+        // Aktor: pastikan semua slot (termasuk starting equipment)
+        // punya instance, dengan durability terisi kalau baru dibuat.
+        SciFi.EquipmentData.syncAllSlots(
 
-    } else {
+            this,
 
-        armor =
-            this.enemy();
+            SciFi.Durability.buildInstanceExtraData
+
+        );
+
+        return;
 
     }
+
+    // Musuh: tetap seperti sebelumnya, baca notetag dari enemy().
+    var armor = this.enemy();
 
     var max =
         SciFi.Durability.maxDurability(armor);
@@ -128,7 +160,35 @@ Game_Battler.prototype.refreshSciFiDurability = function() {
 // API
 //=============================================================================
 
+/*
+ * Mengembalikan instance armor yang sedang terpasang di slot armor
+ * aktor (slot index 2, sesuai SciFi.EquipmentData.armor()), atau
+ * null kalau tidak ada / target bukan aktor.
+ */
+SciFi.Durability.actorArmorInstance = function(target) {
+
+    if (!target.isActor()) {
+        return null;
+    }
+
+    // Slot armor = index 2, sesuai SciFi.EquipmentData.armor()
+    return SciFi.EquipmentData.instanceForSlot(target, 2);
+
+};
+
 SciFi.Durability.current = function(target) {
+
+    if (target.isActor()) {
+
+        var instance = SciFi.Durability.actorArmorInstance(target);
+
+        if (!instance || !instance.durability) {
+            return 0;
+        }
+
+        return instance.durability.current;
+
+    }
 
     return target._scifi.durability.current;
 
@@ -148,21 +208,48 @@ SciFi.Durability.ratio = function(target) {
 
 SciFi.Durability.max = function(target) {
 
+    if (target.isActor()) {
+
+        var instance = SciFi.Durability.actorArmorInstance(target);
+
+        if (!instance || !instance.durability) {
+            return 0;
+        }
+
+        return instance.durability.max;
+
+    }
+
     return target._scifi.durability.max;
 
 };
 
 SciFi.Durability.setCurrent = function(target, value) {
 
-    var oldValue =
-        target._scifi.durability.current;
+    var max = SciFi.Durability.max(target);
 
-    target._scifi.durability.current =
-        SciFi.Utils.clamp(
-            value,
-            0,
-            SciFi.Durability.max(target)
-        );
+    var clamped = SciFi.Utils.clamp(value, 0, max);
+
+    if (target.isActor()) {
+
+        var instance = SciFi.Durability.actorArmorInstance(target);
+
+        if (!instance) {
+            return;
+        }
+
+        if (!instance.durability) {
+            instance.durability = { current: max, max: max };
+        }
+
+        instance.durability.current = clamped;
+
+        return;
+
+    }
+
+    target._scifi.durability.current = clamped;
+
 };
 
 //=============================================================================

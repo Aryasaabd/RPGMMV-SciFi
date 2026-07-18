@@ -77,9 +77,9 @@ SciFi.ArmorPiercing.apply = function(target, amount) {
         "Armor Piercing: -" +
         amount +
         " | Durability: " +
-        target._scifi.durability.current +
+        SciFi.Durability.current(target) +
         "/" +
-        target._scifi.durability.max
+        SciFi.Durability.max(target)
     );
 
 };
