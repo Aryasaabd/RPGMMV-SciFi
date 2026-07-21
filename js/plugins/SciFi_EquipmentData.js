@@ -58,8 +58,6 @@ Game_Actor.prototype.setup = function(actorId) {
 
     SciFi.EquipmentData.initialize(this);
 
-    SciFi.EquipmentData.syncAllSlots(this);
-
 };
 
 Game_Enemy.prototype.setup
@@ -95,8 +93,6 @@ Game_Actor.prototype.changeEquip = function(slotId, item) {
         slotId,
         item
     );
-
-    SciFi.EquipmentData.syncSlotInstance(this, slotId);
 
     SciFi.EquipmentData.refresh(this);
 
@@ -415,49 +411,39 @@ SciFi.EquipmentData.syncSlotInstance = function(battler, slotId, extraDataFn) {
 
     var previousUid = battler._scifi.equipmentInstances[slotId];
 
-    if (!item) {
-
-        // Slot kosong (baru dilepas): simpan uid lama ke pool,
-        // JANGAN dihapus, supaya kalau dipasang lagi nanti,
-        // instance yang sama (dengan durability apa adanya)
-        // yang dipakai lagi, bukan bikin instance baru.
-        if (previousUid) {
-
-            var releasedInstance = SciFi.ItemInstance.get(previousUid);
-
-            if (releasedInstance) {
-
-                var baseId = releasedInstance.baseItemId;
-
-                if (!pool[baseId]) {
-                    pool[baseId] = [];
-                }
-
-                pool[baseId].push(previousUid);
-
-                SciFi.log(
-                    "Instance Released to Pool"
-                    + " | UID: " + previousUid
-                    + " | BaseItemId: " + baseId
-                );
-
-            }
-
-        }
-
-        delete battler._scifi.equipmentInstances[slotId];
-
-        return;
-
-    }
-
-    var currentInstance = previousUid
+    var previousInstance = previousUid
         ? SciFi.ItemInstance.get(previousUid)
         : null;
 
     // Kalau instance yang tersimpan sudah cocok dengan item yang
     // terpasang sekarang, gak perlu ngapa-ngapain.
-    if (currentInstance && currentInstance.baseItemId === item.id) {
+    if (item && previousInstance && previousInstance.baseItemId === item.id) {
+        return;
+    }
+
+    // Instance lama (kalau ada) perlu dilepas ke pool, baik karena
+    // slotnya jadi kosong ATAU karena diganti ke item yang berbeda.
+    if (previousInstance) {
+
+        var releasedBaseId = previousInstance.baseItemId;
+
+        if (!pool[releasedBaseId]) {
+            pool[releasedBaseId] = [];
+        }
+
+        pool[releasedBaseId].push(previousUid);
+
+        SciFi.log(
+            "Instance Released to Pool"
+            + " | UID: " + previousUid
+            + " | BaseItemId: " + releasedBaseId
+        );
+
+    }
+
+    delete battler._scifi.equipmentInstances[slotId];
+
+    if (!item) {
         return;
     }
 
