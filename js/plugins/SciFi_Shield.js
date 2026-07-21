@@ -142,13 +142,86 @@ Game_Actor.prototype.setup = function(actorId) {
 
     _SciFi_Actor_setup.call(this, actorId);
 
-    const shield =
-		SciFi.EquipmentData.maxShield(this);
+    this.refreshSciFiShield();
 
-	this._shield = shield;
-	this._maxShield = shield;
+};
 
-	SciFi.Shield.refreshShieldState(this);
+/*
+ * Reads shield max from a shield generator's notetag.
+ *
+ * Example:
+ * <Shield:100>
+ */
+SciFi.Shield.itemMaxShield = function(item) {
+
+    if (!item) {
+        return 0;
+    }
+
+    return Number(item.meta.Shield || 0);
+
+};
+
+/*
+ * Dipanggil sekali saat instance shield generator baru dibuat,
+ * supaya shield.max langsung terisi dari notetag sejak awal.
+ */
+SciFi.Shield.buildInstanceExtraData = function(item) {
+
+    var max = SciFi.Shield.itemMaxShield(item);
+
+    return {
+
+        shield: {
+
+            current: max,
+
+            max: max
+
+        }
+
+    };
+
+};
+
+/*
+ * Mengembalikan instance shield generator yang sedang terpasang
+ * (slot index 3, sesuai SciFi.EquipmentData.shieldGenerator()),
+ * atau null kalau tidak ada / target bukan aktor.
+ */
+SciFi.Shield.actorGeneratorInstance = function(target) {
+
+    if (!target.isActor()) {
+        return null;
+    }
+
+    return SciFi.EquipmentData.instanceForSlot(target, 3);
+
+};
+
+Game_Battler.prototype.refreshSciFiShield = function() {
+
+    if (this.isActor()) {
+
+        SciFi.EquipmentData.initialize(this);
+
+        SciFi.EquipmentData.syncSlotInstance(
+
+            this,
+
+            3,
+
+            SciFi.Shield.buildInstanceExtraData
+
+        );
+
+        SciFi.Shield.refreshShieldState(this);
+
+        return;
+
+    }
+
+    // Musuh: tidak berubah, ditangani terpisah di Game_Enemy.setup.
 
 };
 
@@ -175,21 +248,68 @@ Game_Enemy.prototype.setup = function(enemyId, x, y) {
 //=============================================================================
 
 Game_Battler.prototype.shield = function() {
+
+    if (this.isActor()) {
+
+        var instance = SciFi.Shield.actorGeneratorInstance(this);
+
+        if (!instance || !instance.shield) {
+            return 0;
+        }
+
+        return instance.shield.current;
+
+    }
+
     return this._shield || 0;
+
 };
 
 Game_Battler.prototype.maxShield = function() {
+
+    if (this.isActor()) {
+
+        var instance = SciFi.Shield.actorGeneratorInstance(this);
+
+        if (!instance || !instance.shield) {
+            return 0;
+        }
+
+        return instance.shield.max;
+
+    }
+
     return this._maxShield || 0;
+
 };
 
 Game_Battler.prototype.setShield = function(value) {
 
-    this._shield =
-        SciFi.Utils.clamp(
-            value,
-            0,
-            this.maxShield()
-        );
+    var max = this.maxShield();
+
+    var clamped = SciFi.Utils.clamp(value, 0, max);
+
+    if (this.isActor()) {
+
+        var instance = SciFi.Shield.actorGeneratorInstance(this);
+
+        if (!instance) {
+            return;
+        }
+
+        if (!instance.shield) {
+            instance.shield = { current: max, max: max };
+        }
+
+        instance.shield.current = clamped;
+
+        SciFi.Shield.refreshShieldState(this);
+
+        return;
+
+    }
+
+    this._shield = clamped;
 
     SciFi.Shield.refreshShieldState(this);
 
@@ -403,40 +523,35 @@ SciFi.Shield.processDamage = function(context) {
 
 SciFi.Shield.refreshEquipment = function(battler) {
 
-    var oldMax =
-        battler._maxShield || 0;
+    if (battler.isActor()) {
 
-    var newMax =
-        SciFi.EquipmentData.maxShield(
-            battler
+        SciFi.EquipmentData.syncSlotInstance(
+
+            battler,
+
+            3,
+
+            SciFi.Shield.buildInstanceExtraData
+
         );
 
-    battler._maxShield = newMax;
+        SciFi.Shield.refreshShieldState(battler);
 
-    battler.setShield(
+        SciFi.log(
+            "Equipment Refresh"
+            + " | Actor: " + battler.name()
+            + " | Shield: " + battler.shield()
+            + "/" + battler.maxShield()
+        );
 
-        Math.min(
+        return;
 
-            battler.shield(),
+    }
 
-            newMax
-
-        )
-
-    );
-
+    // Musuh: tidak menggunakan equipment, biarkan seperti semula.
     SciFi.log(
-
         "Equipment Refresh"
-
-        + " | Shield "
-
-        + oldMax
-
-        + " -> "
-
-        + newMax
-
+        + " | Enemy shield unaffected (no equipment)"
     );
 
 };

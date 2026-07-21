@@ -115,11 +115,16 @@ Game_Battler.prototype.refreshSciFiDurability = function() {
 
     if (this.isActor()) {
 
-        // Aktor: pastikan semua slot (termasuk starting equipment)
-        // punya instance, dengan durability terisi kalau baru dibuat.
-        SciFi.EquipmentData.syncAllSlots(
+        SciFi.EquipmentData.initialize(this);
+
+        // Aktor: cuma sentuh slot armor (index 2), supaya gak
+        // numpuk sama slot lain yang jadi tanggung jawab plugin
+        // lain (misal slot 3 = shield generator, ditangani Shield).
+        SciFi.EquipmentData.syncSlotInstance(
 
             this,
+
+            2,
 
             SciFi.Durability.buildInstanceExtraData
 
