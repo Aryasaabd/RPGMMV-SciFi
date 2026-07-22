@@ -873,6 +873,268 @@ SciFi.EquipmentData.equipInstance = function(actor, slotId, uid) {
 };
 
 //=============================================================================
+// Instance Enumeration
+//=============================================================================
+// Menjawab pertanyaan kebalikan dari instanceForSlot(): untuk satu
+// baseItemId tertentu, instance apa aja yang ada, dan masing-masing
+// statusnya (nganggur di pool, atau lagi kepasang di aktor mana slot
+// berapa).
+//=============================================================================
+
+/*
+ * Returns array of:
+ * {
+ *   uid: string,
+ *   instance: object (data instance dari SciFi.ItemInstance),
+ *   location: "pool" | "equipped",
+ *   actorId: number | null,   // hanya terisi kalau location === "equipped"
+ *   slotId: number | null     // hanya terisi kalau location === "equipped"
+ * }
+ *
+ * Urutan tidak dijamin (pool dulu baru equipped), jangan diasumsikan urut.
+ */
+SciFi.EquipmentData.instancesOfBaseItem = function(baseItemId) {
+
+    var result = [];
+
+    if (!Imported.SciFi_ItemInstance) {
+        return result;
+    }
+
+    //------------------------------------------
+    // Pool (nganggur, gak kepasang siapa-siapa)
+    //------------------------------------------
+
+    var pool = SciFi.EquipmentData.pool();
+
+    var poolUids = pool[baseItemId] || [];
+
+    for (var i = 0; i < poolUids.length; i++) {
+
+        var uid = poolUids[i];
+
+        var instance = SciFi.ItemInstance.get(uid);
+
+        if (!instance) {
+            continue;
+        }
+
+        result.push({
+
+            uid: uid,
+
+            instance: instance,
+
+            location: "pool",
+
+            actorId: null,
+
+            slotId: null
+
+        });
+
+    }
+
+    //------------------------------------------
+    // Equipped (lagi kepasang di salah satu aktor)
+    //------------------------------------------
+
+    var actors = $gameActors._data;
+
+    for (var actorId = 1; actorId < actors.length; actorId++) {
+
+        var actor = actors[actorId];
+
+        if (!actor || !actor._scifi || !actor._scifi.equipmentInstances) {
+            continue;
+        }
+
+        var slots = actor._scifi.equipmentInstances;
+
+        for (var slotId in slots) {
+
+            var equippedUid = slots[slotId];
+
+            var equippedInstance = SciFi.ItemInstance.get(equippedUid);
+
+            if (!equippedInstance) {
+                continue;
+            }
+
+            if (equippedInstance.baseItemId !== baseItemId) {
+                continue;
+            }
+
+            result.push({
+
+                uid: equippedUid,
+
+                instance: equippedInstance,
+
+                location: "equipped",
+
+                actorId: actorId,
+
+                slotId: Number(slotId)
+
+            });
+
+        }
+
+    }
+
+    return result;
+
+};
+
+/*
+ * Sama seperti instancesOfBaseItem(), tapi cuma instance yang bisa
+ * dipilih untuk "actingActor" pasang di slotId tertentu:
+ * - instance yang nganggur di pool
+ * - instance yang SUDAH kepasang di actingActor sendiri, di slotId
+ *   yang sama (supaya muncul di list-nya sendiri sebagai "currently
+ *   equipped", bukan cuma hilang dari list)
+ *
+ * Instance yang kepasang di aktor LAIN sengaja TIDAK ikut,
+ * sesuai keputusan: gak ada mekanisme tukar otomatis.
+ */
+SciFi.EquipmentData.selectableInstances = function(baseItemId, actingActor, slotId) {
+
+    var all = SciFi.EquipmentData.instancesOfBaseItem(baseItemId);
+
+    var actingActorId = actingActor ? actingActor.actorId() : null;
+
+    return all.filter(function(entry) {
+
+        if (entry.location === "pool") {
+            return true;
+        }
+
+        // location === "equipped"
+        return (
+            entry.actorId === actingActorId &&
+            entry.slotId === slotId
+        );
+
+    });
+
+};
+
+//=============================================================================
+// Change Equip to Specific Instance
+//=============================================================================
+// Selayaknya changeEquip() bawaan MV, tapi player bisa pilih UID
+// instance yang spesifik (bukan cuma "pasang item ini, terserah
+// instance mana yang diambil pool").
+//=============================================================================
+
+/*
+ * Memasang instance (uid) tertentu ke slotId milik actor.
+ *
+ * Instance lama di slot itu (kalau ada) akan dilepas balik ke pool,
+ * sama persis seperti alur syncSlotInstance() saat slot dikosongkan.
+ *
+ * uid HARUS instance yang valid & statusnya "pool" (nganggur), atau
+ * fungsi ini tidak melakukan apa-apa (return false).
+ */
+SciFi.EquipmentData.changeEquipToInstance = function(actor, slotId, uid) {
+
+    if (!actor.isActor()) {
+        return false;
+    }
+
+    var instance = SciFi.ItemInstance.get(uid);
+
+    if (!instance) {
+        return false;
+    }
+
+    var baseItem = $dataArmors[instance.baseItemId] || $dataWeapons[instance.baseItemId];
+
+    if (!baseItem) {
+        return false;
+    }
+
+    //------------------------------------------
+    // Pastikan uid ini memang lagi nganggur di pool
+    //------------------------------------------
+
+    var pool = SciFi.EquipmentData.pool();
+
+    var poolList = pool[instance.baseItemId] || [];
+
+    var poolIndex = poolList.indexOf(uid);
+
+    if (poolIndex === -1) {
+
+        SciFi.log(
+            "changeEquipToInstance gagal: UID " + uid +
+            " tidak berstatus pool (mungkin sudah terpasang di aktor lain)."
+        );
+
+        return false;
+
+    }
+
+    //------------------------------------------
+    // Lepas instance lama di slot ini (kalau ada) -> balik ke pool
+    //------------------------------------------
+
+    var previousUid = actor._scifi.equipmentInstances[slotId];
+
+    if (previousUid && previousUid !== uid) {
+
+        var previousInstance = SciFi.ItemInstance.get(previousUid);
+
+        if (previousInstance) {
+
+            var prevBaseId = previousInstance.baseItemId;
+
+            if (!pool[prevBaseId]) {
+                pool[prevBaseId] = [];
+            }
+
+            pool[prevBaseId].push(previousUid);
+
+        }
+
+    }
+
+    //------------------------------------------
+    // Ambil uid baru keluar dari pool
+    //------------------------------------------
+
+    poolList.splice(poolIndex, 1);
+
+    //------------------------------------------
+    // Pasang item database seperti biasa
+    // (ini akan memicu changeEquip -> syncSlotInstance bawaan,
+    // makanya kita OVERRIDE hasil syncSlotInstance itu setelahnya)
+    //------------------------------------------
+
+    actor.changeEquip(slotId, baseItem);
+
+    //------------------------------------------
+    // Timpa instance yang otomatis diambil syncSlotInstance
+    // dengan uid yang memang kita mau
+    //------------------------------------------
+
+    actor._scifi.equipmentInstances[slotId] = uid;
+
+    SciFi.EquipmentData.refresh(actor);
+
+    SciFi.log(
+        "changeEquipToInstance"
+        + " | Actor: " + actor.name()
+        + " | Slot: " + slotId
+        + " | UID: " + uid
+    );
+
+    return true;
+
+};
+
+//=============================================================================
 
 SciFi.log("EquipmentData Loaded");
 SciFi.log("EquipmentData v0.5.0");
