@@ -35,25 +35,6 @@ SciFi.MenuUI.cardPadding = function() {
 };
 
 //=============================================================================
-// Font Style
-//=============================================================================
-
-SciFi.MenuUI.FontStyle = {};
-
-SciFi.MenuUI.applyFontStyle =
-function(window) {
-
-    window.contents.paintOpacity = 255;
-
-    window.contents.outlineColor =
-        "rgba(0,0,0,1)";
-
-    window.contents.outlineWidth =
-        4;
-
-};
-
-//=============================================================================
 // Portrait
 //=============================================================================
 
@@ -115,20 +96,6 @@ SciFi.MenuUI.ControlHints = {
         }
 
     ]
-
-};
-
-//=============================================================================
-// Fonts
-//=============================================================================
-
-SciFi.MenuUI.Font = {
-
-    Header: 24,
-
-    HeaderSmall: 18,
-
-    Resource: 18
 
 };
 
@@ -235,228 +202,6 @@ SciFi.MenuUI.Reserve = {
     // semi-transparan supaya kartu "keliatan gelap" tapi masih
     // kebaca isinya.
     OverlayColor : "rgba(0,0,0,0.55)"
-
-};
-
-//=============================================================================
-// Window
-//=============================================================================
-
-SciFi.MenuUI.Window = {
-
-    BackgroundColor : "rgba(9, 10, 12, 0.8)",
-
-    BorderColor : "#2c1b20",
-
-    BorderWidth : 2,
-
-    Opacity : 0.8
-
-};
-
-//=============================================================================
-// Window Frame (lapisan tengah antara background & border)
-//=============================================================================
-// Bentuknya kayak "border tebal" yang punya lubang segi empat di
-// tengah, jadi background window masih keliatan lewat lubang itu.
-// Warnanya gradasi atas-bawah (TopColor -> BottomColor).
-//=============================================================================
-
-SciFi.MenuUI.WindowFrame = {
-
-    // Ketebalan frame. Set ke 0 untuk mematikan lapisan ini.
-    Width : 18,
-
-    TopColor : "#a19b91",
-
-    MiddleColor : "#8B857C",
-
-    BottomColor : "#746F67"
-
-};
-
-//=============================================================================
-// Draw Window
-//=============================================================================
-
-SciFi.MenuUI.drawWindow =
-function(window) {
-
-    //------------------------------------------
-    // Hide default window
-    //------------------------------------------
-
-    window.opacity = 0;
-
-    window.backOpacity = 0;
-
-    //------------------------------------------
-    // Remove previous sprite
-    //------------------------------------------
-
-    if (window._sciFiWindow) {
-
-        window.removeChild(window._sciFiWindow);
-
-    }
-
-    //------------------------------------------
-    // Create bitmap
-    //------------------------------------------
-
-    var bitmap = new Bitmap(
-
-        window.width,
-
-        window.height
-
-    );
-
-    //------------------------------------------
-    // Background
-    //------------------------------------------
-
-    var c = SciFi.MenuUI.Window.BackgroundColor;
-
-    bitmap.fillRect(
-
-        0,
-
-        0,
-
-        window.width,
-
-        window.height,
-
-        c
-
-    );
-
-    //------------------------------------------
-    // Frame (lapisan tengah, gradient atas-bawah,
-    // punya "lubang" segi empat di tengah supaya
-    // background tetap keliatan lewat lubang itu)
-    //------------------------------------------
-
-    var bw =
-        SciFi.MenuUI.Window.BorderWidth;
-
-    var fw =
-        SciFi.MenuUI.WindowFrame.Width;
-
-    if (fw > 0) {
-
-        var frameCtx =
-            bitmap._context;
-
-        var frameGradient =
-            frameCtx.createLinearGradient(
-                0, 0,
-                0, window.height
-            );
-
-        frameGradient.addColorStop(
-            0, SciFi.MenuUI.WindowFrame.TopColor
-        );
-
-        frameGradient.addColorStop(
-            0.3, SciFi.MenuUI.WindowFrame.MiddleColor
-        );
-
-                frameGradient.addColorStop(
-            0.7, SciFi.MenuUI.WindowFrame.MiddleColor
-        );
-
-        frameGradient.addColorStop(
-            1, SciFi.MenuUI.WindowFrame.BottomColor
-        );
-
-        frameCtx.save();
-
-        frameCtx.fillStyle = frameGradient;
-
-        // Top
-        frameCtx.fillRect(
-            0, 0,
-            window.width, fw
-        );
-
-        // Bottom
-        frameCtx.fillRect(
-            0, window.height - fw,
-            window.width, fw
-        );
-
-        // Left
-        frameCtx.fillRect(
-            0, 0,
-            fw, window.height
-        );
-
-        // Right
-        frameCtx.fillRect(
-            window.width - fw, 0,
-            fw, window.height
-        );
-
-        frameCtx.restore();
-
-        bitmap._setDirty();
-
-    }
-
-    //------------------------------------------
-    // Border
-    //------------------------------------------
-
-    var bc =
-        SciFi.MenuUI.Window.BorderColor;
-
-    bitmap.fillRect(
-        6,6,
-        window.width-12,bw,
-        bc
-    );
-
-    bitmap.fillRect(
-        6,
-        window.height-bw-6,
-        window.width-12,
-        bw,
-        bc
-    );
-
-    // Left
-
-    bitmap.fillRect(
-        6,6,
-        bw,
-        window.height-12,
-        bc
-    );
-
-    // Right
-
-    bitmap.fillRect(
-        window.width-bw-6,
-        6,
-        bw,
-        window.height-12,
-        bc
-    );
-
-    //------------------------------------------
-    // Sprite
-    //------------------------------------------
-
-    window._sciFiWindow =
-        new Sprite(bitmap);
-
-    window.addChildToBack(
-
-        window._sciFiWindow
-
-    );
 
 };
 
@@ -1357,7 +1102,7 @@ function(scene) {
 Window_MenuStatus.prototype.drawCardHeader =
 function(actor, rect) {
 
-    SciFi.MenuUI.applyFontStyle(this);
+    SciFi.UICore.applyFontStyle(this);
 
     var oldSize =
         this.contents.fontSize;
@@ -1367,7 +1112,7 @@ function(actor, rect) {
     //------------------------------------------
 
     this.contents.fontSize =
-        SciFi.MenuUI.Font.Header;
+        SciFi.UICore.Font.Header;
 
     this.changeTextColor(
         this.normalColor()
@@ -1390,7 +1135,7 @@ function(actor, rect) {
     //------------------------------------------
 
     this.contents.fontSize =
-        SciFi.MenuUI.Font.HeaderSmall;
+        SciFi.UICore.Font.HeaderSmall;
 
     this.changeTextColor(
         this.systemColor()
@@ -1474,7 +1219,7 @@ function(actor, rect) {
 Window_MenuStatus.prototype.drawCardResources =
 function(actor, rect) {
 
-    SciFi.MenuUI.applyFontStyle(this);
+    SciFi.UICore.applyFontStyle(this);
 
     var x = rect.x + 12;
     var y = rect.height + rect.y - 170;
@@ -1531,7 +1276,7 @@ function(type, value, max, x, y, width) {
 		this.contents.fontSize;
 
 	this.contents.fontSize =
-		SciFi.MenuUI.Font.Resource;
+		SciFi.UICore.Font.Resource;
 
     var gaugeHeight = 12;
     var rate = 0;
@@ -1572,7 +1317,9 @@ function(type, value, max, x, y, width) {
         "right"
     );
 
-this.drawSegmentGauge(
+SciFi.UICore.drawSegmentGauge(
+
+    this,
 
     type,
 
@@ -1590,240 +1337,6 @@ this.drawSegmentGauge(
 
 	this.contents.fontSize =
     oldSize;
-
-};
-
-//=============================================================================
-// Resource Colors
-//=============================================================================
-
-SciFi.MenuUI.resourceFillColor = function(type) {
-
-    switch (type) {
-
-    case "Shield":
-        return "#00C8FF";
-
-    case "Hitpoints":
-        return "#E05050";
-
-    case "Stamina":
-        return "#4CD964";
-
-    case "Momentum":
-        return "#FFC83D";
-
-    }
-
-    return "#FFFFFF";
-
-};
-
-SciFi.MenuUI.resourceBackColor = function(type) {
-
-    switch (type) {
-
-    case "Shield":
-        return "#0B4A60";
-
-    case "Hitpoints":
-        return "#5A1F1F";
-
-    case "Stamina":
-        return "#1D4B22";
-
-    case "Momentum":
-        return "#5A4A16";
-
-    }
-
-    return "#444444";
-
-};
-
-//=============================================================================
-// Gauge
-//=============================================================================
-
-SciFi.MenuUI.Gauge = {
-
-    SegmentValue: 20,
-
-    SegmentGap: 2,
-
-    Height: 12
-
-};
-
-//=============================================================================
-// Segmented Gauge
-//=============================================================================
-
-Window_MenuStatus.prototype.drawSegmentGauge =
-function(type, value, max, x, y, width) {
-
-    //------------------------------------------
-    // Config
-    //------------------------------------------
-
-    var segmentValue =
-        SciFi.MenuUI.Gauge.SegmentValue;
-
-    var gap =
-        SciFi.MenuUI.Gauge.SegmentGap;
-
-    var height =
-        SciFi.MenuUI.Gauge.Height;
-
-    //------------------------------------------
-    // Safety
-    //------------------------------------------
-
-    if (max <= 0) {
-
-        return;
-
-    }
-
-    //------------------------------------------
-    // Segment Count
-    //------------------------------------------
-
-    var segmentCount =
-        Math.ceil(
-            max / segmentValue
-        );
-
-    //------------------------------------------
-    // Unit Count
-    //------------------------------------------
-
-    var lastCapacity =
-        max % segmentValue;
-
-    if (lastCapacity === 0) {
-
-        lastCapacity = segmentValue;
-
-    }
-
-    var totalUnits =
-        (segmentCount - 1)
-        +
-        (lastCapacity / segmentValue);
-
-    var totalGap =
-        (segmentCount - 1) * gap;
-
-    var unitWidth =
-        (width - totalGap)
-        / totalUnits;
-
-    //------------------------------------------
-    // Draw Segments
-    //------------------------------------------
-
-    var currentX = x;
-
-    for (var i = 0; i < segmentCount; i++) {
-
-        //--------------------------------------
-        // Segment Range
-        //--------------------------------------
-
-        var start =
-            i * segmentValue;
-
-        var end =
-            Math.min(
-                max,
-                start + segmentValue
-            );
-
-        var capacity =
-            end - start;
-        
-        var currentWidth =
-            unitWidth *
-            (capacity / segmentValue);
-
-        //--------------------------------------
-        // Current Fill
-        //--------------------------------------
-
-        var current =
-            Math.max(
-                0,
-                Math.min(
-                    value - start,
-                    capacity
-                )
-            );
-
-        var rate =
-            current / capacity;
-
-        //--------------------------------------
-        // Background
-        //--------------------------------------
-
-        this.contents.fillRect(
-
-            currentX,
-
-            y,
-
-            currentWidth,
-
-            height,
-
-            SciFi.MenuUI.resourceBackColor(type)
-
-        );
-
-        //--------------------------------------
-        // Fill
-        //--------------------------------------
-
-        if (rate > 0) {
-
-            this.contents.fillRect(
-
-                currentX,
-
-                y,
-
-                currentWidth * rate,
-
-                height,
-
-                SciFi.MenuUI.resourceFillColor(type)
-
-            );
-
-            //----------------------------------
-            // Highlight
-            //----------------------------------
-
-            this.contents.fillRect(
-
-                currentX,
-
-                y,
-
-                currentWidth * rate - 1,
-
-                2,
-
-                "rgba(255,255,255,0.40)"
-
-            );
-
-        }
-
-        currentX += currentWidth + gap;
-
-    }
 
 };
 
@@ -2337,7 +1850,7 @@ function() {
 
         if (windows[i]) {
 
-            SciFi.MenuUI.drawWindow(
+            SciFi.UICore.drawWindow(
 
                 windows[i]
 
