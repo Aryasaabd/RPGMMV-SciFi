@@ -557,6 +557,20 @@ SciFi.Shield.refreshEquipment = function(battler) {
 };
 
 //=============================================================================
+// Register as Instance Provider
+//=============================================================================
+
+SciFi.EquipmentData.registerInstanceProvider(
+
+    function(item) {
+        return DataManager.isArmor(item) && SciFi.Shield.itemMaxShield(item) > 0;
+    },
+
+    SciFi.Shield.buildInstanceExtraData
+
+);
+
+//=============================================================================
 
 SciFi.log("Shield Loaded");
 SciFi.log("Shield Version " + SciFi.Version);

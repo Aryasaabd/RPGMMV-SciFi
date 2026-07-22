@@ -427,6 +427,20 @@ SciFi.Durability.refreshEquipment = function(battler) {
 };
 
 //=============================================================================
+// Register as Instance Provider
+//=============================================================================
+
+SciFi.EquipmentData.registerInstanceProvider(
+
+    function(item) {
+        return DataManager.isArmor(item) && SciFi.Durability.maxDurability(item) > 0;
+    },
+
+    SciFi.Durability.buildInstanceExtraData
+
+);
+
+//=============================================================================
 // Plugin Loaded
 //=============================================================================
 

@@ -88,16 +88,57 @@ const _Game_Actor_changeEquip =
 
 Game_Actor.prototype.changeEquip = function(slotId, item) {
 
+    SciFi.EquipmentData._suppressInventorySync = true;
+
     _Game_Actor_changeEquip.call(
         this,
         slotId,
         item
     );
 
+    SciFi.EquipmentData._suppressInventorySync = false;
+
     SciFi.EquipmentData.refresh(this);
 
 };
+//=============================================================================
+// Gain Item Hook
+//=============================================================================
 
+SciFi.EquipmentData._suppressInventorySync = false;
+
+const _SciFi_Game_Party_gainItem =
+    Game_Party.prototype.gainItem;
+
+Game_Party.prototype.gainItem = function(item, amount, includeEquip) {
+
+    _SciFi_Game_Party_gainItem.call(
+
+        this,
+
+        item,
+
+        amount,
+
+        includeEquip
+
+    );
+
+    if (
+
+        item &&
+
+        DataManager.isArmor(item) &&
+
+        !SciFi.EquipmentData._suppressInventorySync
+
+    ) {
+
+        SciFi.EquipmentData.syncInventoryInstances(item);
+
+    }
+
+};
 //=============================================================================
 // Equipment Access
 //=============================================================================
@@ -374,6 +415,181 @@ SciFi.EquipmentData.pool = function() {
 
 };
 
+//=============================================================================
+// Instance Creation on Gain
+//=============================================================================
+// Supaya armor/shield generator yang didapat lewat toko/loot juga
+// langsung punya instance sejak masuk inventory (bukan cuma pas
+// di-equip), sehingga UI nanti bisa menampilkan tiap unit secara
+// terpisah beserta durability/shield-nya masing-masing.
+//=============================================================================
+
+/*
+ * Daftar "provider" yang tahu cara membuat extraData untuk baseItem
+ * tertentu. Diisi oleh Durability & Shield lewat registerInstanceProvider,
+ * supaya EquipmentData sendiri tidak perlu tahu detail durability/shield.
+ */
+SciFi.EquipmentData._instanceProviders = [];
+
+/*
+ * Dipanggil oleh plugin lain (Durability, Shield) untuk mendaftarkan
+ * fungsi extraDataFn yang dipakai saat instance baru dibuat untuk
+ * item yang match dengan checkFn.
+ *
+ * checkFn(item) -> boolean, apakah item ini perlu instance
+ * extraDataFn(item) -> object data tambahan (misal { durability: {...} })
+ */
+SciFi.EquipmentData.registerInstanceProvider = function(checkFn, extraDataFn) {
+
+    SciFi.EquipmentData._instanceProviders.push({
+
+        check: checkFn,
+
+        build: extraDataFn
+
+    });
+
+};
+
+/*
+ * Menggabungkan semua extraData dari provider yang cocok dengan
+ * item ini jadi satu object.
+ */
+SciFi.EquipmentData.buildExtraDataForItem = function(item) {
+
+    var result = {};
+
+    var providers = SciFi.EquipmentData._instanceProviders;
+
+    for (var i = 0; i < providers.length; i++) {
+
+        var provider = providers[i];
+
+        if (provider.check(item)) {
+
+            var data = provider.build(item);
+
+            for (var key in data) {
+
+                result[key] = data[key];
+
+            }
+
+        }
+
+    }
+
+    return result;
+
+};
+
+/*
+ * Membuat instance baru untuk 1 unit item dan memasukkannya ke pool,
+ * supaya nanti bisa diambil saat di-equip atau dipilih dari UI.
+ */
+SciFi.EquipmentData.createPooledInstance = function(item) {
+
+    var extraData = SciFi.EquipmentData.buildExtraDataForItem(item);
+
+    var uid = SciFi.ItemInstance.create(item, extraData);
+
+    var pool = SciFi.EquipmentData.pool();
+
+    if (!pool[item.id]) {
+        pool[item.id] = [];
+    }
+
+    pool[item.id].push(uid);
+
+    SciFi.log(
+        "Instance Created on Gain"
+        + " | UID: " + uid
+        + " | BaseItemId: " + item.id
+    );
+
+    return uid;
+
+};
+
+/*
+ * Menghitung berapa banyak unit dari item ini yang SUDAH punya
+ * instance (baik lagi terpasang di aktor manapun, atau nganggur
+ * di pool).
+ */
+SciFi.EquipmentData.trackedInstanceCount = function(item) {
+
+    var pool = SciFi.EquipmentData.pool();
+
+    var poolList = pool[item.id] || [];
+
+    return poolList.length;
+
+};
+
+/*
+ * Dipanggil setiap kali party dapat/kehilangan armor. Kalau
+ * bertambah dan item ini perlu instance (ada provider yang cocok),
+ * buatkan instance baru untuk selisihnya.
+ *
+ * Kalau berkurang (dijual/dibuang), instance yang "lebih" (gak
+ * kepakai) dihapus dari pool & registry.
+ */
+SciFi.EquipmentData.syncInventoryInstances = function(item) {
+
+    if (!Imported.SciFi_ItemInstance) {
+        return;
+    }
+
+    if (!item) {
+        return;
+    }
+
+    var extraData = SciFi.EquipmentData.buildExtraDataForItem(item);
+
+    // Item ini gak dilacak provider manapun (misal Pistol biasa).
+    var isEmpty = Object.keys(extraData).length === 0;
+
+    if (isEmpty) {
+        return;
+    }
+
+    var ownedCount = $gameParty.numItems(item);
+
+    var trackedCount = SciFi.EquipmentData.trackedInstanceCount(item);
+
+    if (ownedCount > trackedCount) {
+
+        // Nambah: buat instance baru untuk selisihnya.
+        var toCreate = ownedCount - trackedCount;
+
+        for (var i = 0; i < toCreate; i++) {
+
+            SciFi.EquipmentData.createPooledInstance(item);
+
+        }
+
+    } else if (ownedCount < trackedCount) {
+
+        // Berkurang: hapus instance yang nganggur di pool dulu
+        // (yang lagi terpasang di aktor tidak disentuh).
+        var toRemove = trackedCount - ownedCount;
+
+        var pool = SciFi.EquipmentData.pool();
+
+        var poolList = pool[item.id] || [];
+
+        for (var j = 0; j < toRemove && poolList.length > 0; j++) {
+
+            var removedUid = poolList.pop();
+
+            SciFi.ItemInstance.delete(removedUid);
+
+        }
+
+    }
+
+};
+
 /*
  * Menjalankan syncSlotInstance untuk semua slot equip aktor.
  * Dipanggil saat setup() supaya starting equipment (yang dipasang
@@ -485,6 +701,174 @@ SciFi.EquipmentData.syncSlotInstance = function(battler, slotId, extraDataFn) {
         + " | Slot: " + slotId
         + " | UID: " + newUid
     );
+
+};
+
+//=============================================================================
+// Equip by Specific Instance (uid)
+//=============================================================================
+// Dipakai saat player memilih unit spesifik dari beberapa item
+// identik (misal 2 Heavy Armor dengan durability berbeda). Berbeda
+// dari changeEquip bawaan yang cuma tahu item.id, ini menunjuk
+// langsung ke instance mana yang mau dipasang.
+//=============================================================================
+
+/*
+ * Mencari slotId mana yang sedang menggunakan uid tertentu di
+ * seluruh party (baik aktor yang sama atau aktor lain), atau
+ * null kalau uid itu tidak sedang terpasang di manapun.
+ */
+SciFi.EquipmentData.findEquippedOwner = function(uid) {
+
+    var members = $gameParty.members();
+
+    for (var i = 0; i < members.length; i++) {
+
+        var member = members[i];
+
+        if (!member._scifi || !member._scifi.equipmentInstances) {
+            continue;
+        }
+
+        for (var slotId in member._scifi.equipmentInstances) {
+
+            if (member._scifi.equipmentInstances[slotId] === uid) {
+
+                return { actor: member, slotId: Number(slotId) };
+
+            }
+
+        }
+
+    }
+
+    return null;
+
+};
+
+/*
+ * Memasang instance dengan uid tertentu ke slotId aktor ini.
+ *
+ * Mengembalikan true kalau berhasil, false kalau gagal (misal
+ * uid tidak ditemukan, atau baseItemId tidak cocok dengan slot).
+ */
+SciFi.EquipmentData.equipInstance = function(actor, slotId, uid) {
+
+    if (!Imported.SciFi_ItemInstance) {
+        return false;
+    }
+
+    var instance = SciFi.ItemInstance.get(uid);
+
+    if (!instance) {
+
+        SciFi.log("equipInstance failed: instance not found | UID: " + uid);
+
+        return false;
+
+    }
+
+    var item = $dataArmors[instance.baseItemId];
+
+    if (!item) {
+
+        SciFi.log("equipInstance failed: baseItemId invalid | UID: " + uid);
+
+        return false;
+
+    }
+
+    var etypeId = actor.equipSlots()[slotId];
+
+    if (item.etypeId !== etypeId) {
+
+        SciFi.log(
+            "equipInstance failed: item etype mismatch"
+            + " | Item: " + item.name
+            + " | Slot: " + slotId
+        );
+
+        return false;
+
+    }
+
+    // Kalau instance ini lagi terpasang di aktor lain, lepas dulu
+    // dari sana (ini otomatis melempar uid ke pool lewat
+    // syncSlotInstance bawaan).
+    var owner = SciFi.EquipmentData.findEquippedOwner(uid);
+
+    if (owner) {
+
+        owner.actor.changeEquip(owner.slotId, null);
+
+    }
+
+    // Apapun jalurnya di atas, pastikan uid ini TIDAK lagi
+    // tercatat di pool sebelum kita pasang ke slot baru —
+    // supaya tidak ada instance yang "dobel pegang".
+    var pool = SciFi.EquipmentData.pool();
+
+    var poolList = pool[instance.baseItemId];
+
+    if (poolList) {
+
+        var idx = poolList.indexOf(uid);
+
+        if (idx >= 0) {
+            poolList.splice(idx, 1);
+        }
+
+    }
+
+    // Pasang lewat changeEquip bawaan MV supaya param dari
+    // armor tetap terhitung normal (def, mdf, dll), lalu
+    // syncSlotInstance otomatis jalan dari hook yang sudah ada.
+    actor.changeEquip(slotId, item);
+
+    // syncSlotInstance tadi mungkin: (a) tidak melakukan apa-apa
+    // kalau baseItemId item lama & baru sama (early return), jadi
+    // slot masih menunjuk uid lama, atau (b) membuat/reuse instance
+    // lain dari pool secara sembarang. Di kedua kasus, apapun yang
+    // sekarang nempel di slot dan BUKAN uid yang kita minta harus
+    // dilepas ke pool dulu, supaya tidak jadi instance yatim.
+    var leftoverUid = actor._scifi.equipmentInstances[slotId];
+
+    if (leftoverUid && leftoverUid !== uid) {
+
+        var leftoverInstance = SciFi.ItemInstance.get(leftoverUid);
+
+        if (leftoverInstance) {
+
+            var leftoverBaseId = leftoverInstance.baseItemId;
+
+            if (!pool[leftoverBaseId]) {
+                pool[leftoverBaseId] = [];
+            }
+
+            pool[leftoverBaseId].push(leftoverUid);
+
+            SciFi.log(
+                "Instance Released to Pool"
+                + " | UID: " + leftoverUid
+                + " | BaseItemId: " + leftoverBaseId
+            );
+
+        }
+
+    }
+
+    actor._scifi.equipmentInstances[slotId] = uid;
+
+    SciFi.EquipmentData.refresh(actor);
+
+    SciFi.log(
+        "Equip Instance"
+        + " | Actor: " + actor.name()
+        + " | Slot: " + slotId
+        + " | UID: " + uid
+    );
+
+    return true;
 
 };
 
