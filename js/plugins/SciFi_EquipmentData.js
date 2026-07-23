@@ -1055,55 +1055,28 @@ SciFi.EquipmentData.changeEquipToInstance = function(actor, slotId, uid) {
         return false;
     }
 
-    //------------------------------------------
-    // Pastikan uid ini memang lagi nganggur di pool
-    //------------------------------------------
-
     var pool = SciFi.EquipmentData.pool();
 
-    var poolList = pool[instance.baseItemId] || [];
-
-    var poolIndex = poolList.indexOf(uid);
-
-    if (poolIndex === -1) {
-
-        SciFi.log(
-            "changeEquipToInstance gagal: UID " + uid +
-            " tidak berstatus pool (mungkin sudah terpasang di aktor lain)."
-        );
-
-        return false;
-
-    }
-
     //------------------------------------------
-    // Ambil uid baru keluar dari pool
-    //------------------------------------------
-    // Instance LAMA di slot ini sengaja TIDAK dilepas manual di sini
-    // — itu akan otomatis ditangani oleh syncSlotInstance bawaan saat
-    // changeEquip() dipanggil di bawah (untuk item berbeda), atau
-    // oleh langkah "leftover cleanup" setelahnya (untuk kasus item
-    // yang SAMA, di mana syncSlotInstance early-return dan mapping
-    // lama masih nyantol — itu yang akan dibersihkan leftover
-    // cleanup). Melepas manual di sini menyebabkan instance yang
-    // sama terdorong ke pool DUA KALI.
-    //------------------------------------------
-
-    poolList.splice(poolIndex, 1);
-
-    //------------------------------------------
-    // Pasang item database seperti biasa
-    // (ini akan memicu changeEquip -> syncSlotInstance bawaan,
-    // makanya kita OVERRIDE hasil syncSlotInstance itu setelahnya)
+    // Pasang item database seperti biasa DULU, SEBELUM menyentuh
+    // pool sama sekali.
+    //
+    // Ini akan memicu changeEquip -> syncSlotInstance bawaan, yang
+    // otomatis melepas instance LAMA slot ini ke pool (kalau item
+    // beda), lalu mengambil/reuse SATU instance sembarang dari pool
+    // untuk slot ini (atau bikin baru KALAU pool memang kosong).
+    //
+    // Kita sengaja TIDAK keluarkan uid target dari pool dulu di sini
+    // — supaya syncSlotInstance melihat pool masih ada isinya, dan
+    // tidak salah bikin instance baru yang tidak perlu.
     //------------------------------------------
 
     actor.changeEquip(slotId, baseItem);
 
     //------------------------------------------
-    // syncSlotInstance tadi mungkin sudah mengambil instance LAIN
-    // secara sembarang dari pool (karena dia tidak tahu kita mau
-    // instance spesifik). Instance yang "ke-ambil nyasar" ini harus
-    // dikembalikan ke pool dulu, supaya tidak jadi instance yatim.
+    // syncSlotInstance tadi mungkin mengambil/membuat instance LAIN
+    // secara sembarang. Instance itu harus dikembalikan ke pool,
+    // supaya tidak jadi instance yatim / duplikat baru.
     //------------------------------------------
 
     var leftoverUid = actor._scifi.equipmentInstances[slotId];
@@ -1133,6 +1106,36 @@ SciFi.EquipmentData.changeEquipToInstance = function(actor, slotId, uid) {
     }
 
     //------------------------------------------
+    // Sekarang baru keluarkan uid yang memang kita mau dari pool.
+    //
+    // Kalau leftoverUid sama persis dengan uid target (kebetulan
+    // syncSlotInstance sudah reuse uid yang memang kita mau), uid
+    // itu sudah otomatis terpasang benar dan sudah tidak ada lagi
+    // di pool -> tidak perlu diapa-apakan lagi.
+    //------------------------------------------
+
+    if (leftoverUid !== uid) {
+
+        var poolList = pool[instance.baseItemId] || [];
+
+        var poolIndex = poolList.indexOf(uid);
+
+        if (poolIndex === -1) {
+
+            SciFi.log(
+                "changeEquipToInstance gagal: UID " + uid +
+                " tidak berstatus pool (mungkin sudah terpasang di aktor lain)."
+            );
+
+            return false;
+
+        }
+
+        poolList.splice(poolIndex, 1);
+
+    }
+
+    //------------------------------------------
     // Timpa instance yang otomatis diambil syncSlotInstance
     // dengan uid yang memang kita mau
     //------------------------------------------
@@ -1155,4 +1158,4 @@ SciFi.EquipmentData.changeEquipToInstance = function(actor, slotId, uid) {
 //=============================================================================
 
 SciFi.log("EquipmentData Loaded");
-SciFi.log("EquipmentData v0.5.1");
+SciFi.log("EquipmentData v0.5.2");
