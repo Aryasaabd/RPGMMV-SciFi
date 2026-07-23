@@ -52,7 +52,7 @@ if (!Imported.SciFi_UICore) {
 // index-nya di sini.
 //=============================================================================
 
-SciFi.EquipUI.instanceSlots = [2];
+SciFi.EquipUI.instanceSlots = [2, 3];
 
 SciFi.EquipUI.slotHasInstance = function(slotId) {
 
@@ -262,11 +262,29 @@ Window_EquipItem.prototype.drawItem = function(index) {
     // Durability Gauge (kalau ada uid)
     //------------------------------------------
 
-    if (entry.uid) {
+if (entry.uid) {
 
         var instance = SciFi.ItemInstance.get(entry.uid);
 
+        var gaugeData = null;
+
+        var gaugeType = null;
+
         if (instance && instance.durability) {
+
+            gaugeData = instance.durability;
+
+            gaugeType = "Armor";
+
+        } else if (instance && instance.shield) {
+
+            gaugeData = instance.shield;
+
+            gaugeType = "Shield";
+
+        }
+
+        if (gaugeData) {
 
             SciFi.UICore.applyFontStyle(this);
 
@@ -278,7 +296,7 @@ Window_EquipItem.prototype.drawItem = function(index) {
 
             this.drawText(
 
-                instance.durability.current + " / " + instance.durability.max,
+                gaugeData.current + " / " + gaugeData.max,
 
                 rect.x,
 
@@ -294,11 +312,11 @@ Window_EquipItem.prototype.drawItem = function(index) {
 
                 this,
 
-                "Armor",
+                gaugeType,
 
-                instance.durability.current,
+                gaugeData.current,
 
-                instance.durability.max,
+                gaugeData.max,
 
                 rect.x,
 
@@ -445,6 +463,6 @@ Scene_Equip.prototype.create = function() {
 // Plugin Loaded
 //=============================================================================
 
-SciFi.log("EquipUI v0.1.0 Loaded");
+SciFi.log("EquipUI v0.1.1 Loaded");
 
 })();
