@@ -137,8 +137,50 @@ SciFi.EquipUI.ActorPanelLayout = {
     // ditaruh persis di bawah ini.
     Height : 576,
 
+    // Tinggi area foto aktor (di dalam actor panel).
+    PhotoHeight : 576,
+
     // Jarak vertikal antar baris gauge.
     GaugeGap : 36
+
+};
+
+// Gradasi hitam transparan di bagian BAWAH foto, transisi ke area
+// gauge -- gaya sama kayak drawCardGradient() di SciFi_MenuUI.
+SciFi.EquipUI.ActorPanelGradient = {
+
+    // Seberapa jauh gradasinya naik dari tepi bawah foto.
+    Height : 200,
+
+    // Alpha (kegelapan) paling pekat, tepat di tepi bawah foto.
+    StartAlpha : 0.9
+
+};
+
+//=============================================================================
+// Portrait Crop Offset
+//=============================================================================
+// Foto aktor diambil dari sumber yang sama kayak SciFi_MenuUI
+// (img/portraits/), digambar "cover" (dizoom biar penuh area foto,
+// kelebihannya di-crop). Karena rasio foto asli belum tentu sama
+// kayak area fotonya di sini, titik fokus crop-nya bisa digeser
+// lewat offset ini:
+//   x/y : 0   -> nempel ke kiri/atas
+//         0.5 -> tengah
+//         1   -> nempel ke kanan/bawah
+//=============================================================================
+
+SciFi.EquipUI.PortraitOffsetDefault = { x : 1, y : 1 };
+
+// Override per id aktor kalau posisi wajah di tiap foto beda-beda.
+// Contoh: SciFi.EquipUI.PortraitOffsets[1] = { x : 0.5, y : 0.15 };
+SciFi.EquipUI.PortraitOffsets = {};
+
+SciFi.EquipUI.portraitOffset = function(actor) {
+
+    var custom = SciFi.EquipUI.PortraitOffsets[actor.actorId()];
+
+    return custom || SciFi.EquipUI.PortraitOffsetDefault;
 
 };
 
@@ -193,7 +235,7 @@ SciFi.EquipUI.SceneLayout = {
     },
 
     //--------------------------------------------------------------
-    // Kolom B - Stats (full height)
+    // Kolom B - Stats 
     //--------------------------------------------------------------
     statusRect : function(scene) {
 
@@ -699,18 +741,118 @@ Window_EquipActorPanel.prototype.refresh = function() {
     y += lh;
 
     //------------------------------------------------------------
-    // Foto
+    // Foto (sumber sama kayak SciFi_MenuUI, cover + bisa digeser)
     //------------------------------------------------------------
 
-    this.drawActorFace(this._actor, this.textPadding(), y);
+    this.drawPortrait(y);
 
-    y += Window_Base._faceHeight + 12;
+    this.drawPhotoGradient(y);
+
+    y += SciFi.EquipUI.ActorPanelLayout.PhotoHeight + 12;
 
     //------------------------------------------------------------
     // Gauge Current
     //------------------------------------------------------------
 
     this.drawResourceGauges(y);
+
+};
+
+/*
+ * Gradasi hitam transparan di tepi bawah foto, biar transisi ke
+ * area gauge di bawahnya halus (gaya sama kayak card di MenuUI).
+ */
+Window_EquipActorPanel.prototype.drawPhotoGradient = function(photoTopY) {
+
+    var cfg = SciFi.EquipUI.ActorPanelGradient;
+
+    var h = cfg.Height;
+
+    var w = this.contentsWidth();
+
+    var bottom = photoTopY + SciFi.EquipUI.ActorPanelLayout.PhotoHeight;
+
+    for (var i = 0; i < h; i++) {
+
+        var rate = i / h;
+
+        var alpha = cfg.StartAlpha * rate;
+
+        this.contents.fillRect(
+
+            0,
+
+            bottom - h + i - 70,
+
+            w,
+
+            1,
+
+            "rgba(0,0,0," + alpha + ")"
+
+        );
+
+    }
+
+};
+
+Window_EquipActorPanel.prototype.drawPortrait = function(y) {
+
+    var actor = this._actor;
+
+    var w = this.contentsWidth();
+
+    var h = SciFi.EquipUI.ActorPanelLayout.PhotoHeight;
+
+    // Fallback ke foto wajah bawaan MV kalau SciFi_MenuUI (sumber
+    // foto) belum ke-load.
+    if (!Imported.SciFi_MenuUI || !SciFi.MenuUI || !SciFi.MenuUI.loadPortrait) {
+
+        this.drawActorFace(actor, 0, y);
+
+        return;
+
+    }
+
+    var bitmap = SciFi.MenuUI.loadPortrait(actor);
+
+    if (!bitmap.isReady()) {
+
+        // Fotonya belum selesai dimuat -- gambar ulang begitu siap.
+        bitmap.addLoadListener(this.refresh.bind(this));
+
+        return;
+
+    }
+
+    this.drawPortraitCover(bitmap, 0, y, w, h);
+
+};
+
+/*
+ * Gambar bitmap dengan mode "cover": dizoom secukupnya biar penuh
+ * area tujuan (dw x dh) tanpa gepeng, kelebihannya di-crop sesuai
+ * titik fokus dari SciFi.EquipUI.portraitOffset().
+ */
+Window_EquipActorPanel.prototype.drawPortraitCover = function(bitmap, dx, dy, dw, dh) {
+
+    var offset = SciFi.EquipUI.portraitOffset(this._actor);
+
+    var scale = Math.max(dw / bitmap.width, dh / bitmap.height);
+
+    var sw = dw / scale;
+
+    var sh = dh / scale;
+
+    var maxSx = Math.max(0, bitmap.width - sw);
+
+    var maxSy = Math.max(0, bitmap.height - sh);
+
+    var sx = maxSx * offset.x;
+
+    var sy = maxSy * offset.y;
+
+    this.contents.blt(bitmap, sx, sy, sw, sh, dx, dy, dw, dh);
 
 };
 
@@ -756,13 +898,13 @@ Window_EquipActorPanel.prototype.drawResourceGauge = function(label, value, max,
 
     this.changeTextColor(this.systemColor());
 
-    this.drawText(label, x, y + 190, width, "left");
+    this.drawText(label, x, y - 240, width, "left");
 
     this.resetTextColor();
 
-    this.drawText(value + " / " + max, x, y + 190, width, "right");
+    this.drawText(value + " / " + max, x, y - 240, width, "right");
 
-    SciFi.UICore.drawSegmentGauge(this, label, value, max, x, y + 220, width);
+    SciFi.UICore.drawSegmentGauge(this, label, value, max, x, y - 210, width);
 
     this.contents.fontSize = oldSize;
 
@@ -1144,6 +1286,10 @@ SciFi.EquipUI.StatusFontSize = 24;
 // eksplisit, gak pernah mewarisi ukuran font dari elemen lain.
 SciFi.EquipUI.StatusTitleFontSize = 26;
 
+// Ukuran font "page X/Y" di pojok kanan -- sengaja lebih kecil dari
+// judul di atas.
+SciFi.EquipUI.StatusPageFontSize = 16;
+
 // Proporsi lebar kolom nama/nilai per baris stat (dari lebar penuh
 // window, karena sekarang 1 kolom lagi -- lihat drawParamPage).
 SciFi.EquipUI.StatusColumn = {
@@ -1236,23 +1382,31 @@ Window_EquipStatus.prototype.drawParamPageTab = function(y) {
 
     var oldSize = this.contents.fontSize;
 
-    this.contents.fontSize = SciFi.EquipUI.StatusTitleFontSize;
+    //------------------------------------------------------------
+    // Judul, rata kiri, font gede
+    //------------------------------------------------------------
 
-    //------------------------------------------------------------
-    // Judul, rata kiri
-    //------------------------------------------------------------
+    this.contents.fontSize = SciFi.EquipUI.StatusTitleFontSize;
 
     this.resetTextColor();
 
-    this.drawText(page.label, 10, y + 5, w - 10, "left");
+    this.drawText(page.label, 6, y, w - 6, "left");
 
     //------------------------------------------------------------
-    // "page X/Y", rata kanan
+    // "page X/Y", rata kanan, font lebih kecil
     //------------------------------------------------------------
+
+    this.contents.fontSize = SciFi.EquipUI.StatusPageFontSize;
+
+    var pageY = y + Math.floor(
+
+        (SciFi.EquipUI.StatusTitleFontSize - SciFi.EquipUI.StatusPageFontSize) / 2
+
+    );
 
     this.changeTextColor(SciFi.EquipUI.AccentColor);
 
-    this.drawText("page " + pageIndex + "/" + pageCount, -10, y + 5, w - 10, "right");
+    this.drawText("page " + pageIndex + "/" + pageCount, 0, pageY - 6, w - 10, "right");
 
     this.resetTextColor();
 
@@ -1284,7 +1438,7 @@ Window_EquipStatus.prototype.drawParamPage = function(y) {
 
         for (var j = 0; j < page.elementIds.length; j++) {
 
-            this.drawElementRow(10, y + (rowHeight * j), w - 10, page.type, page.elementIds[j]);
+            this.drawElementRow(6, y + (rowHeight * j), w - 6, page.type, page.elementIds[j]);
 
         }
 
@@ -1855,6 +2009,58 @@ Scene_Equip.prototype.create = function() {
         }
 
     }
+
+    // Jaga-jaga: kadang ukuran window balik ke ukuran yang salah
+    // (mis. actor panel jadi persegi) SETELAH SciFi.UICore.drawWindow()
+    // diterapkan. Paksa ulang posisi & ukurannya di sini, paling
+    // terakhir, supaya apapun yang terjadi di tengah gak kebawa ke
+    // tampilan akhir.
+    this.reapplyScifiEquipLayout();
+
+};
+
+Scene_Equip.prototype.reapplyScifiEquipLayout = function() {
+
+    var layout = SciFi.EquipUI.SceneLayout;
+
+    SciFi.EquipUI.forceWindowRect(this._actorPanelWindow, layout.actorPanelRect(this));
+
+    SciFi.EquipUI.forceWindowRect(this._statusWindow, layout.statusRect(this));
+
+    SciFi.EquipUI.forceWindowRect(this._commandWindow, layout.commandRect(this));
+
+    SciFi.EquipUI.forceWindowRect(this._slotWindow, layout.slotRect(this));
+
+    SciFi.EquipUI.forceWindowRect(this._itemWindow, layout.itemRect(this));
+
+    SciFi.EquipUI.forceWindowRect(this._helpWindow, layout.helpRect(this));
+
+    // Item window harus tetap ketutup sampai user pilih slot.
+    this._itemWindow.hide();
+
+};
+
+/*
+ * Paksa window pindah ke rect tertentu DAN bikin ulang kanvas
+ * teksnya (createContents), lalu refresh -- dipakai sebagai jaring
+ * pengaman di beberapa titik karena .move() sendirian kadang gak
+ * cukup buat bikin ulang kanvas sesuai ukuran baru di project ini.
+ */
+SciFi.EquipUI.forceWindowRect = function(win, rect) {
+
+    if (!win) {
+        return;
+    }
+
+    win.move(rect.x, rect.y, rect.width, rect.height);
+
+    if (win.createContents) {
+
+        win.createContents();
+
+    }
+
+    win.refresh();
 
 };
 
