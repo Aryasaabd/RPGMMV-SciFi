@@ -1438,7 +1438,7 @@ Window_EquipStatus.prototype.drawParamPage = function(y) {
 
         for (var j = 0; j < page.elementIds.length; j++) {
 
-            this.drawElementRow(6, y + (rowHeight * j), w - 6, page.type, page.elementIds[j]);
+            this.drawElementRow(10, y + (rowHeight * j), w - 10, page.type, page.elementIds[j]);
 
         }
 

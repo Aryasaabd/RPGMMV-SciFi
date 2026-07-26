@@ -468,9 +468,41 @@ function(window, type, value, max, x, y, width) {
 };
 
 //=============================================================================
+// DRAW PANEL / KOTAK UI BACKGROUND
+//=============================================================================
+SciFi.UICore.drawPanel = function(window, x, y, width, height, options) {
+    options = options || {};
+
+    // Warna background transparan agak terang
+    var color = options.color || "rgba(255, 255, 255, 0.06)";
+    
+    // Warna garis border tipis di pinggir kotak (opsional)
+    var borderColor = options.borderColor || "rgba(255, 255, 255, 0.12)";
+
+    // 1. Gambar latar belakang kotak
+    window.contents.fillRect(x, y, width, height, color);
+
+    // 2. Gambar garis tepi tipis (border)
+    if (borderColor) {
+
+        var ctx = window.contents._context;
+
+        ctx.save();
+
+        ctx.strokeStyle = borderColor;
+
+        ctx.lineWidth = 1;
+
+        ctx.strokeRect(x + 0.5, y + 0.5, width - 1, height - 1);
+
+        ctx.restore();
+    }
+};
+
+//=============================================================================
 // Plugin Loaded
 //=============================================================================
 
-SciFi.log("UICore v0.1.0 Loaded");
+SciFi.log("UICore v0.1.1 Loaded");
 
 })();
