@@ -1,5 +1,5 @@
 /*:
- * @plugindesc SciFi Item UI v0.1.0
+ * @plugindesc SciFi Item UI v0.3.0
  * @author
  *
  * @help
@@ -26,12 +26,26 @@
  * ----------------------------------------------------------------------
  * v0.1.0 -- Style/Layout Only
  * ----------------------------------------------------------------------
- * Versi ini SENGAJA belum menampilkan instance armor/shield generator
- * yang beda-beda per unit (kayak yang udah ada di SciFi_EquipUI).
- * Window_ItemList masih pakai makeItemList() bawaan MV apa adanya --
- * cuma tampilan (background panel, kolom, border window) yang diubah.
- * Fitur per-instance nanti nyusul di versi berikutnya, kalau layout &
- * style di file ini sudah fix.
+ * Versi awal: cuma restyle layout (2 kolom, panel background, dst),
+ * Window_ItemList masih 1 baris per item id, tanpa info per-instance.
+ *
+ * ----------------------------------------------------------------------
+ * v0.3.0 -- Tampilkan Item yang Lagi Dipakai Aktor
+ * ----------------------------------------------------------------------
+ * Sebelumnya cuma item yang beneran ada di $gameParty (bag) yang
+ * kelihatan -- starting equipment (yang gak pernah lewat gainItem)
+ * jadi gak keliatan di Item menu, TAPI instance-nya tetap kehitung
+ * di instancesOfBaseItem(), bikin jumlah baris jadi ganjil begitu
+ * ada unit lain dari item yang sama masuk lewat gainItem.
+ *
+ * Sekarang daftar item DIGABUNG dari 2 sumber: yang ada di bag +
+ * yang lagi kepasang di aktor MANAPUN (termasuk cadangan). Baris
+ * yang mewakili unit yang lagi dipakai aktor menampilkan NAMA AKTOR
+ * itu (menggantikan angka jumlah), baris "stack" biasa tetap
+ * menampilkan jumlah seperti sebelumnya. Berlaku baik untuk item
+ * ber-instance (Armor/Shield Generator, tiap unit baris sendiri)
+ * maupun yang tidak (senjata biasa, dll -- 1 baris stack + 1 baris
+ * per aktor yang memakainya).
  *
  * ----------------------------------------------------------------------
  * PENTING -- Class yang dipakai bareng Scene_Shop
@@ -106,7 +120,18 @@ SciFi.ItemUI.ItemListLayout = {
 
     // Jarak antar panel & jarak panel ke tepi window (px), sesuai
     // permintaan: 8px semua sisi.
-    PanelMargin : 8
+    PanelMargin : 8,
+
+    // Tinggi 1 baris/panel item. Dibikin cukup buat 2 baris konten
+    // (nama+icon di baris 1, info tambahan di baris 2) supaya SEMUA
+    // panel seragam tingginya, walau isinya beda-beda (ada yang
+    // baris 2-nya kosong).
+    RowHeight : 68,
+
+    // Font & posisi baris info tambahan (baris ke-2).
+    InfoFontSize : 18,
+
+    InfoOffsetY : 34
 
 };
 
@@ -262,6 +287,198 @@ SciFi.ItemUI.forceWindowRect = function(win, rect) {
 };
 
 //=============================================================================
+// Instance Info Helpers
+//=============================================================================
+// Cuma Armor & Shield Generator yang punya instance (lihat
+// SciFi_ItemInstance/SciFi_EquipmentData) -- item lain (Consumable,
+// senjata biasa, Key Item) gak punya, jadi otomatis fallback ke
+// tampilan 1 baris per item id seperti biasa (baris info kosong).
+//=============================================================================
+
+/*
+ * True kalau item ini PUNYA instance yang sudah pernah dibuat
+ * (baik lagi di pool atau lagi kepasang di aktor manapun).
+ */
+SciFi.ItemUI.hasInstances = function(item) {
+
+    if (!Imported.SciFi_ItemInstance || !Imported.SciFi_EquipmentData) {
+        return false;
+    }
+
+    if (!DataManager.isArmor(item)) {
+        return false;
+    }
+
+    return SciFi.EquipmentData.instancesOfBaseItem(item.id).length > 0;
+
+};
+
+/*
+ * Teks baris info (baris ke-2) untuk 1 instance tertentu.
+ * Mengembalikan "" kalau gak ada apa-apa buat ditampilkan (uid
+ * null, instance gak ketemu, atau gak punya shield/durability).
+ */
+SciFi.ItemUI.instanceInfoLine = function(item, uid) {
+
+    if (!uid || !Imported.SciFi_ItemInstance) {
+        return "";
+    }
+
+    var instance = SciFi.ItemInstance.get(uid);
+
+    if (!instance) {
+        return "";
+    }
+
+    if (instance.shield) {
+
+        return "Shield : " +
+            instance.shield.current + " / " + instance.shield.max;
+
+    }
+
+    if (instance.durability) {
+
+        var base = Number(item.meta.Armor || 0);
+
+        var ratio = instance.durability.max > 0 ?
+            (instance.durability.current / instance.durability.max) : 0;
+
+        var effective = Math.floor(base * ratio);
+
+        return "Armor : " + effective + " / " + base +
+            "   Durability : " +
+            instance.durability.current + " / " + instance.durability.max;
+
+    }
+
+    return "";
+
+};
+
+/*
+ * Key unik per item database (beda tipe tapi id sama harus dianggap
+ * beda), dipakai buat de-duplikasi waktu ngumpulin daftar kandidat.
+ */
+SciFi.ItemUI.itemKey = function(item) {
+
+    if (DataManager.isWeapon(item)) {
+        return "weapon_" + item.id;
+    }
+
+    if (DataManager.isArmor(item)) {
+        return "armor_" + item.id;
+    }
+
+    return "item_" + item.id;
+
+};
+
+/*
+ * Semua item/weapon/armor yang PERLU dipertimbangkan buat
+ * ditampilkan: yang lagi di bag ($gameParty.allItems()) DIGABUNG
+ * sama yang lagi kepasang di aktor MANAPUN (termasuk aktor cadangan
+ * yang lagi gak di party aktif), supaya starting equipment yang gak
+ * pernah lewat gainItem tetap kelihatan.
+ */
+SciFi.ItemUI.collectCandidateItems = function() {
+
+    var seen = {};
+
+    var list = [];
+
+    function add(it) {
+
+        if (!it) {
+            return;
+        }
+
+        var key = SciFi.ItemUI.itemKey(it);
+
+        if (seen[key]) {
+            return;
+        }
+
+        seen[key] = true;
+
+        list.push(it);
+
+    }
+
+    var bagItems = $gameParty.allItems();
+
+    for (var i = 0; i < bagItems.length; i++) {
+
+        add(bagItems[i]);
+
+    }
+
+    var actors = $gameActors._data;
+
+    for (var actorId = 1; actorId < actors.length; actorId++) {
+
+        var actor = actors[actorId];
+
+        if (!actor) {
+            continue;
+        }
+
+        var equips = actor.equips();
+
+        for (var slotId = 0; slotId < equips.length; slotId++) {
+
+            add(equips[slotId]);
+
+        }
+
+    }
+
+    return list;
+
+};
+
+/*
+ * Semua {actor, slotId} yang lagi memasang item ini SECARA LANGSUNG
+ * (perbandingan referensi objek $dataWeapons/$dataArmors/$dataItems,
+ * bukan uid). Dipakai buat item TANPA sistem instance (senjata biasa,
+ * offhand, accessory, frame, atau armor yang gak punya Durability/
+ * Shield notetag) -- item DENGAN instance (Armor/Shield Generator)
+ * udah otomatis kebawa "location: equipped" dari
+ * SciFi.EquipmentData.instancesOfBaseItem(), gak lewat fungsi ini.
+ */
+SciFi.ItemUI.equippedEntries = function(item) {
+
+    var result = [];
+
+    var actors = $gameActors._data;
+
+    for (var actorId = 1; actorId < actors.length; actorId++) {
+
+        var actor = actors[actorId];
+
+        if (!actor) {
+            continue;
+        }
+
+        var equips = actor.equips();
+
+        for (var slotId = 0; slotId < equips.length; slotId++) {
+
+            if (equips[slotId] === item) {
+
+                result.push({ actor : actor, slotId : slotId });
+
+            }
+
+        }
+
+    }
+
+    return result;
+
+};
+
+//=============================================================================
 // Window_ItemCategory -- Vertikal, style command list menu utama
 //=============================================================================
 
@@ -332,22 +549,50 @@ Window_Gold.prototype.windowWidth = function() {
 };
 
 //=============================================================================
-// Window_ItemList -- 2 Kolom + Panel Background per Item
+// Window_ItemList -- 2 Kolom + Panel Background + Baris Info Instance
+//=============================================================================
+// CATATAN PENTING soal Window_EquipItem:
+//
+// Window_EquipItem (dipakai di SciFi_EquipUI) adalah SUBCLASS dari
+// Window_ItemList ini. drawItem(), makeItemList(), dan itemHeight()
+// SUDAH di-override langsung di Window_EquipItem.prototype oleh
+// SciFi_EquipUI, jadi override kita di sini otomatis KETUTUP/gak
+// kepake buat Window_EquipItem (aman, gak perlu di-guard).
+//
+// TAPI itemRect(), itemWidth(), dan maxCols() TIDAK di-override di
+// SciFi_EquipUI (dia masih pakai punya Window_ItemList apa adanya),
+// jadi 3 fungsi itu WAJIB di-guard supaya gak ikut ngerusak layout
+// gauge yang udah dibikin di Equip scene -- kalau instance-nya
+// Window_EquipItem, balikin ke behavior asli Window_Selectable.
 //=============================================================================
 
-// Fallback kalau versi core project ini tidak punya itemAt()
-// (pola yang sama dipakai di SciFi_EquipUI untuk Window_EquipSlot).
-Window_ItemList.prototype.itemAt =
+Window_ItemList.prototype.itemAt = function(index) {
 
-    Window_ItemList.prototype.itemAt ||
+    var entry = this._data ? this._data[index] : null;
 
-    function(index) {
+    return entry ? entry.item : null;
 
-        return this._data ? this._data[index] : null;
+};
 
-    };
+Window_ItemList.prototype.item = function() {
+
+    return this.itemAt(this.index());
+
+};
+
+Window_ItemList.prototype.entryAt = function(index) {
+
+    return this._data ? this._data[index] : null;
+
+};
 
 Window_ItemList.prototype.maxCols = function() {
+
+    if (this instanceof Window_EquipItem) {
+
+        return 2;
+
+    }
 
     return SciFi.ItemUI.ItemListLayout.Columns;
 
@@ -359,6 +604,12 @@ Window_ItemList.prototype.maxCols = function() {
  */
 Window_ItemList.prototype.itemWidth = function() {
 
+    if (this instanceof Window_EquipItem) {
+
+        return Window_Selectable.prototype.itemWidth.call(this);
+
+    }
+
     var margin = SciFi.ItemUI.ItemListLayout.PanelMargin;
 
     var cols = this.maxCols();
@@ -367,11 +618,23 @@ Window_ItemList.prototype.itemWidth = function() {
 
 };
 
+Window_ItemList.prototype.itemHeight = function() {
+
+    return SciFi.ItemUI.ItemListLayout.RowHeight;
+
+};
+
 /*
  * Grid manual (bukan pakai spacing() bawaan) supaya margin antar
  * panel & margin ke tepi window persis 8px sesuai permintaan.
  */
 Window_ItemList.prototype.itemRect = function(index) {
+
+    if (this instanceof Window_EquipItem) {
+
+        return Window_Selectable.prototype.itemRect.call(this, index);
+
+    }
 
     var margin = SciFi.ItemUI.ItemListLayout.PanelMargin;
 
@@ -393,13 +656,121 @@ Window_ItemList.prototype.itemRect = function(index) {
 
 };
 
+/*
+ * Bikin _data jadi array {item, uid, actorName}.
+ *
+ * - Armor/Shield Generator (punya instance): 1 baris per UNIT yang
+ *   pernah dibuat instance-nya -- baik yang lagi nganggur di pool
+ *   (actorName: null) MAUPUN yang lagi kepasang di aktor manapun
+ *   (actorName: nama aktor itu, biar jelas siapa yang pakai).
+ * - Item lain (Consumable, senjata biasa, Key Item, dst): 1 baris
+ *   "stack" kalau ada yang nganggur di bag (actorName: null, jumlah
+ *   ditampilkan seperti biasa), DITAMBAH 1 baris terpisah per aktor
+ *   yang lagi memakainya (actorName diisi, gak ada jumlah).
+ *
+ * View-only -- belum ada aksi apa-apa yang dibedain berdasarkan uid/
+ * actorName di sini. onItemOk tetap pakai perilaku "use item" bawaan
+ * MV apa adanya.
+ */
+Window_ItemList.prototype.makeItemList = function() {
+
+    this._data = [];
+
+    var self = this;
+
+    var candidates = SciFi.ItemUI.collectCandidateItems();
+
+    for (var i = 0; i < candidates.length; i++) {
+
+        var it = candidates[i];
+
+        if (!self.includes(it)) {
+            continue;
+        }
+
+        if (SciFi.ItemUI.hasInstances(it)) {
+
+            self.pushInstanceRows(it);
+
+        } else {
+
+            self.pushPlainRows(it);
+
+        }
+
+    }
+
+};
+
+Window_ItemList.prototype.pushInstanceRows = function(item) {
+
+    var instances = SciFi.EquipmentData.instancesOfBaseItem(item.id);
+
+    for (var i = 0; i < instances.length; i++) {
+
+        var entry = instances[i];
+
+        var actorName = null;
+
+        if (entry.location === "equipped") {
+
+            var actor = $gameActors.actor(entry.actorId);
+
+            actorName = actor ? actor.name() : null;
+
+        }
+
+        this._data.push({
+
+            item : item,
+
+            uid : entry.uid,
+
+            actorName : actorName
+
+        });
+
+    }
+
+};
+
+Window_ItemList.prototype.pushPlainRows = function(item) {
+
+    var count = $gameParty.numItems(item);
+
+    if (count > 0) {
+
+        this._data.push({ item : item, uid : null, actorName : null });
+
+    }
+
+    var equipped = SciFi.ItemUI.equippedEntries(item);
+
+    for (var i = 0; i < equipped.length; i++) {
+
+        this._data.push({
+
+            item : item,
+
+            uid : null,
+
+            actorName : equipped[i].actor.name()
+
+        });
+
+    }
+
+};
+
 Window_ItemList.prototype.drawItem = function(index) {
 
-    var item = this.itemAt(index);
+    var entry = this.entryAt(index);
 
-    if (!item) {
+    if (!entry || !entry.item) {
         return;
     }
+
+    var item = entry.item;
 
     var rect = this.itemRect(index);
 
@@ -409,41 +780,122 @@ Window_ItemList.prototype.drawItem = function(index) {
 
     SciFi.UICore.drawPanel(this, rect.x, rect.y, rect.width, rect.height);
 
-    //------------------------------------------------------------
-    // Icon + Nama + Jumlah
-    //------------------------------------------------------------
-
     SciFi.UICore.applyFontStyle(this);
 
     var innerPad = this.textPadding();
 
-    var numberWidth = this.numberWidth();
+    var line1Width = rect.width - innerPad * 2;
 
     this.changePaintOpacity(this.isEnabled(item));
 
-    this.drawItemName(
+    //------------------------------------------------------------
+    // Baris 1 : Icon + Nama, lalu salah satu dari:
+    // - Nama aktor (kalau unit ini lagi kepasang di aktor tertentu)
+    // - Jumlah (kalau ini baris "stack" biasa, gak ada uid/actorName)
+    // - Kosong (unit instance yang lagi nganggur di pool)
+    //------------------------------------------------------------
 
-        item,
+    var numberWidth = this.numberWidth();
 
-        rect.x + innerPad,
+    if (entry.actorName) {
 
-        rect.y,
+        this.drawItemName(
 
-        rect.width - numberWidth - innerPad * 2
+            item,
 
-    );
+            rect.x + innerPad,
 
-    this.drawItemNumber(
+            rect.y,
 
-        item,
+            line1Width - numberWidth
 
-        rect.x,
+        );
 
-        rect.y,
+        this.changeTextColor(this.systemColor());
 
-        rect.width - innerPad
+        this.drawText(
 
-    );
+            entry.actorName,
+
+            rect.x,
+
+            rect.y,
+
+            rect.width - innerPad,
+
+            "right"
+
+        );
+
+        this.resetTextColor();
+
+    } else if (!entry.uid) {
+
+        this.drawItemName(
+
+            item,
+
+            rect.x + innerPad,
+
+            rect.y,
+
+            line1Width - numberWidth
+
+        );
+
+        this.drawItemNumber(
+
+            item,
+
+            rect.x,
+
+            rect.y,
+
+            rect.width - innerPad
+
+        );
+
+    } else {
+
+        this.drawItemName(item, rect.x + innerPad, rect.y, line1Width);
+
+    }
+
+    //------------------------------------------------------------
+    // Baris 2 : Info tambahan (Armor/Durability atau Shield).
+    // Kosong (gak gambar apa-apa) kalau item ini gak punya --
+    // tinggi panel tetap sama (RowHeight seragam semua item).
+    //------------------------------------------------------------
+
+    var infoLine = SciFi.ItemUI.instanceInfoLine(item, entry.uid);
+
+    if (infoLine) {
+
+        var oldSize = this.contents.fontSize;
+
+        this.contents.fontSize = SciFi.ItemUI.ItemListLayout.InfoFontSize;
+
+        this.changeTextColor(this.systemColor());
+
+        this.drawText(
+
+            infoLine,
+
+            rect.x + innerPad,
+
+            rect.y + SciFi.ItemUI.ItemListLayout.InfoOffsetY,
+
+            rect.width - innerPad * 2,
+
+            "right"
+
+        );
+
+        this.resetTextColor();
+
+        this.contents.fontSize = oldSize;
+
+    }
 
     this.changePaintOpacity(true);
 
@@ -588,6 +1040,6 @@ Scene_Item.prototype.reapplyScifiItemLayout = function() {
 // Plugin Loaded
 //=============================================================================
 
-SciFi.log("ItemUI v0.1.0 Loaded");
+SciFi.log("ItemUI v0.3.0 Loaded");
 
 })();
