@@ -14,6 +14,7 @@ var $plugins =
 {"name":"SciFi_Armor","status":true,"description":"SciFi Armor System v0.2.1","parameters":{}},
 {"name":"SciFi_ArmorPiercing","status":true,"description":"SciFi Armor Piercing System v0.1.1","parameters":{}},
 {"name":"SciFi_DamageData","status":true,"description":"SciFi Damage Data v0.2.0","parameters":{}},
+{"name":"SciFi_ItemUI","status":true,"description":"SciFi Item UI v0.1.0","parameters":{}},
 {"name":"SciFi_EquipUI","status":true,"description":"SciFi Equip UI v0.3.0","parameters":{}},
 {"name":"SciFi_StatusUI","status":true,"description":"[v1.5] Custom HD Status UI. Panel grouping, dynamic box height, scroll indicators.","parameters":{"--- Layout ---":"","Column Ratios":"30,40,30","Default Portrait":"Actor1_1","--- Font Sizes ---":"","Header Font Size":"28","Content Font Size":"22","Bio Font Size":"20"}},
 {"name":"SciFi_SkillUI","status":true,"description":"SciFi Skill UI v0.1.0","parameters":{}},
