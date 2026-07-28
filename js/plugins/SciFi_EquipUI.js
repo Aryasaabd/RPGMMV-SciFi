@@ -1141,9 +1141,22 @@ Window_EquipSlot.prototype.itemHeight = function() {
 
 };
 
+Window_EquipSlot.prototype.itemRect = function(index) {
+    return new Rectangle(
+        8,                     // kiri
+        8 + index * 88,        // 84 panel + 4 gap
+        this.contentsWidth() - 16,
+        84
+    );
+};
+
+// --------------------------------------------------------------------------
+
 // Fallback kalau versi core tidak punya itemRectForText.
 Window_EquipSlot.prototype.itemRectForText =
+
     Window_EquipSlot.prototype.itemRectForText ||
+
     function(index) {
 
         var rect = this.itemRect(index);
@@ -1156,10 +1169,11 @@ Window_EquipSlot.prototype.itemRectForText =
 
     };
 
-// Fallback kalau versi core tidak punya itemAt() (dipakai untuk
-// mengambil item yang sedang terpasang di slot index tertentu).
+// Fallback kalau versi core tidak punya itemAt()
 Window_EquipSlot.prototype.itemAt =
+
     Window_EquipSlot.prototype.itemAt ||
+    
     function(index) {
 
         return this._actor ? this._actor.equips()[index] : null;
@@ -1172,36 +1186,40 @@ Window_EquipSlot.prototype.drawItem = function(index) {
         return;
     }
 
+    // --- [NEW] Gambar Panel Background untuk Slot ---
+    // Memanggil itemRect() yang sudah kita override ukurannya
+    var panelRect = this.itemRect(index);
+    SciFi.UICore.drawPanel(this, panelRect.x, panelRect.y, panelRect.width, panelRect.height);
+    // ----------------------------------------------
+
     var rect = this.itemRectForText(index);
 
     this.changePaintOpacity(this.isEnabled(index));
 
     SciFi.UICore.applyFontStyle(this);
-
+    
+    // ... [SISA KODE DRAW ITEM TETAP SAMA] ...
+    
     var oldSize = this.contents.fontSize;
 
     var layout = SciFi.EquipUI.SlotLayout;
 
-    //------------------------------------------------------------
-    // Baris atas: label jenis slot (mis. "Shield Generator")
-    //------------------------------------------------------------
-
-    this.contents.fontSize = layout.LabelFontSize;
+    // Baris atas: label jenis slot
+    this.contents.fontSize = layout.LabelFontSize - 4;
 
     this.changeTextColor(this.systemColor());
 
-    this.drawText(this.slotName(index), rect.x, rect.y, rect.width, "left");
+    this.drawText(this.slotName(index), rect.x, rect.y - 2, rect.width, "left");
 
-    //------------------------------------------------------------
-    // Nama item + baris info pertama (kalau ada), sebaris
-    //------------------------------------------------------------
-
+    // Nama item + baris info pertama
     var infoLines = SciFi.EquipUI.slotInfoLines(this._actor, index);
 
     var nameY = rect.y + layout.NameOffsetY;
 
     var nameWidth = infoLines.length > 0 ?
+
         Math.floor(rect.width * 0.5) :
+
         rect.width;
 
     this.contents.fontSize = layout.NameFontSize;
@@ -1216,24 +1234,21 @@ Window_EquipSlot.prototype.drawItem = function(index) {
 
         this.changeTextColor(this.systemColor());
 
-        this.drawText(infoLines[0], rect.x, nameY, rect.width, "right");
+        this.drawText(infoLines[0], rect.x, nameY - 35, rect.width, "right");
 
     }
 
-    //------------------------------------------------------------
-    // Baris info tambahan (mis. Durability, di bawah baris nama)
-    //------------------------------------------------------------
-
+    // Baris info tambahan (mis. Durability)
     for (var i = 1; i < infoLines.length; i++) {
 
         var extraY = nameY + (layout.InfoLineHeight * i);
 
-        this.drawText(infoLines[i], rect.x, extraY, rect.width, "right");
+        this.drawText(infoLines[i], rect.x, extraY - 35, rect.width, "right");
 
     }
 
     this.contents.fontSize = oldSize;
-
+    
     this.resetTextColor();
 
     this.changePaintOpacity(true);
@@ -1348,25 +1363,49 @@ Window_EquipStatus.prototype.refresh = function() {
         return;
     }
 
+    // --- [NEW] Gambar Background Panel ---
+    var w = this.contentsWidth();
+
+    var h = this.contentsHeight();
+
+    // Kotak 1: Judul Stats
+    var p1X = 8;
+
+    var p1Y = 8;
+    
+    var p1W = w - 16;
+
+    var p1H = this.lineHeight() + 8;
+
+    SciFi.UICore.drawPanel(this, p1X, p1Y, p1W, p1H);
+
+    // Kotak 2: Isi Stats (memanjang sampai bawah)
+    var p2X = 8;
+
+    var p2Y = p1Y + p1H + 8; // Gap 8px dari panel judul
+
+    var p2W = w - 16;
+
+    var p2H = h - p2Y - 8;   // Sisa ruang ke bawah
+
+    SciFi.UICore.drawPanel(this, p2X, p2Y, p2W, p2H);
+    // -------------------------------------
+
     SciFi.UICore.applyFontStyle(this);
 
     var lh = this.lineHeight();
 
-    var y = 0;
+    // --- Sesuaikan koordinat Y agar teks masuk ke dalam panel ---
+    
+    // Tab Halaman (digeser agar pas di Panel 1)
+    var tabY = p1Y + 4; 
 
-    //------------------------------------------------------------
-    // Tab Halaman (◀ Core Stats ▶ / Shield Resistance / dst)
-    //------------------------------------------------------------
+    this.drawParamPageTab(tabY);
 
-    this.drawParamPageTab(y);
+    // Isi Halaman (digeser agar pas di Panel 2)
+    var contentY = p2Y + 8; 
 
-    y += lh + 8;
-
-    //------------------------------------------------------------
-    // Isi Halaman
-    //------------------------------------------------------------
-
-    this.drawParamPage(y);
+    this.drawParamPage(contentY);
 
 };
 
@@ -1390,7 +1429,7 @@ Window_EquipStatus.prototype.drawParamPageTab = function(y) {
 
     this.resetTextColor();
 
-    this.drawText(page.label, 6, y, w - 6, "left");
+    this.drawText(page.label, 16, y, w - 16, "left");
 
     //------------------------------------------------------------
     // "page X/Y", rata kanan, font lebih kecil
@@ -1406,7 +1445,7 @@ Window_EquipStatus.prototype.drawParamPageTab = function(y) {
 
     this.changeTextColor(SciFi.EquipUI.AccentColor);
 
-    this.drawText("page " + pageIndex + "/" + pageCount, 0, pageY - 6, w - 10, "right");
+    this.drawText("page " + pageIndex + "/" + pageCount, 0, pageY - 6, w - 18, "right");
 
     this.resetTextColor();
 
@@ -1426,7 +1465,7 @@ Window_EquipStatus.prototype.drawParamPage = function(y) {
 
         for (var i = 0; i < page.rows.length; i++) {
 
-            this.drawParamRow(10, y + (rowHeight * i), w - 10, page.rows[i]);
+            this.drawParamRow(18, y + (rowHeight * i), w - 18, page.rows[i]);
 
         }
 
@@ -1438,7 +1477,7 @@ Window_EquipStatus.prototype.drawParamPage = function(y) {
 
         for (var j = 0; j < page.elementIds.length; j++) {
 
-            this.drawElementRow(10, y + (rowHeight * j), w - 10, page.type, page.elementIds[j]);
+            this.drawElementRow(18, y + (rowHeight * j), w - 18, page.type, page.elementIds[j]);
 
         }
 
@@ -1506,7 +1545,7 @@ Window_EquipStatus.prototype.drawParamRow = function(x, y, w, row) {
 
             this.changeTextColor(this.systemColor());
 
-            this.drawText("\u2192", x + nameWidth + valueWidth, y, arrowWidth, "center");
+            this.drawText("\u2192", x + nameWidth + valueWidth + 8, y, arrowWidth, "center");
 
             this.changeTextColor(this.paramchangeTextColor(diff));
 
@@ -1514,7 +1553,7 @@ Window_EquipStatus.prototype.drawParamRow = function(x, y, w, row) {
 
                 SciFi.EquipUI.formatParamValue(row, newValue),
 
-                x + nameWidth + valueWidth + arrowWidth,
+                x + nameWidth + valueWidth + arrowWidth - 8,
 
                 y,
 
