@@ -500,6 +500,73 @@ SciFi.UICore.drawPanel = function(window, x, y, width, height, options) {
 };
 
 //=============================================================================
+// Generic Scene Styling: Title & Options
+//=============================================================================
+// Restyle ringan buat scene yang gak butuh layout khusus (cuma border/
+// background window bawaan MV yang diganti gaya SciFi_UICore). Kalau
+// nanti Title/Options butuh reposisi/resize juga, pindahin ke plugin
+// sendiri (SciFi_TitleUI.js dll) -- untuk sekarang cukup di sini karena
+// perubahannya cuma styling window, bukan layout baru.
+//=============================================================================
+
+var _SciFi_UICore_SceneTitle_createCommandWindow =
+    Scene_Title.prototype.createCommandWindow;
+
+Scene_Title.prototype.createCommandWindow = function() {
+
+    _SciFi_UICore_SceneTitle_createCommandWindow.call(this);
+
+    SciFi.UICore.drawWindow(this._commandWindow);
+
+    if (this._commandWindow.createContents) {
+
+        this._commandWindow.createContents();
+
+    }
+
+    this._commandWindow.refresh();
+
+};
+
+var _SciFi_UICore_SceneOptions_createOptionsWindow =
+    Scene_Options.prototype.createOptionsWindow;
+
+Scene_Options.prototype.createOptionsWindow = function() {
+
+    _SciFi_UICore_SceneOptions_createOptionsWindow.call(this);
+
+    SciFi.UICore.drawWindow(this._optionsWindow);
+
+    if (this._optionsWindow.createContents) {
+
+        this._optionsWindow.createContents();
+
+    }
+
+    this._optionsWindow.refresh();
+
+};
+
+var _SciFi_UICore_SceneGameEnd_createCommandWindow =
+    Scene_GameEnd.prototype.createCommandWindow;
+
+Scene_GameEnd.prototype.createCommandWindow = function() {
+
+    _SciFi_UICore_SceneGameEnd_createCommandWindow.call(this);
+
+    SciFi.UICore.drawWindow(this._commandWindow);
+
+    if (this._commandWindow.createContents) {
+
+        this._commandWindow.createContents();
+
+    }
+
+    this._commandWindow.refresh();
+
+};
+
+//=============================================================================
 // Plugin Loaded
 //=============================================================================
 

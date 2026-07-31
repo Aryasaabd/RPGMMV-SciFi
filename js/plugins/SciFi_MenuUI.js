@@ -1865,6 +1865,56 @@ function() {
 };
 
 //=============================================================================
+// Menu Command Order (full override, bukan cuma addOriginalCommands)
+//=============================================================================
+// Override penuh supaya urutan PASTI: Item/Skill/Equip/Status/Formation
+// (bawaan MV) -> Quest Log -> Save -> Load -> Game End.
+//
+// CATATAN: karena ini override PENUH, addOriginalCommands() bawaan TIDAK
+// dipanggil di sini -- kalau nanti ada plugin LAIN (selain Galv_QuestLog)
+// yang juga nambah command lewat addOriginalCommands, commandnya harus
+// ditambahkan manual di sini juga (panggil this.xxxCommand() di posisi
+// yang diinginkan).
+//=============================================================================
+
+Window_MenuCommand.prototype.makeCommandList = function() {
+
+    this.addMainCommands();
+
+    this.addFormationCommand();
+
+    if (Imported.Galv_QuestLog && this.addQuestCommand) {
+
+        this.addQuestCommand();
+
+    }
+
+    this.addSaveCommand();
+
+    this.addCommand("Load", "load", true);
+
+    this.addGameEndCommand();
+
+};
+
+var _SciFi_MenuUI_SceneMenu_createCommandWindow =
+    Scene_Menu.prototype.createCommandWindow;
+
+Scene_Menu.prototype.createCommandWindow = function() {
+
+    _SciFi_MenuUI_SceneMenu_createCommandWindow.call(this);
+
+    this._commandWindow.setHandler("load", this.commandLoad.bind(this));
+
+};
+
+Scene_Menu.prototype.commandLoad = function() {
+
+    SceneManager.push(Scene_Load);
+
+};
+
+//=============================================================================
 // Plugin Loaded
 //=============================================================================
 
