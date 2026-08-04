@@ -4,10 +4,16 @@
  *
  * @param --- Layout ---
  *
- * @param Textbox Height
+ * @param Talk Textbox Height
  * @parent --- Layout ---
  * @type number
- * @desc Tinggi textbox di pixel (talk & narration sama).
+ * @desc Tinggi textbox mode talk (di luar name bar). Total window = ini + Name Bar Height.
+ * @default 180
+ *
+ * @param Narration Textbox Height
+ * @parent --- Layout ---
+ * @type number
+ * @desc Tinggi textbox mode narasi (gak ada name bar, jadi ini tinggi total window).
  * @default 180
  *
  * @param Name Bar Height
@@ -30,26 +36,6 @@
  *
  * @param --- Styling ---
  *
- * @param Bubble Background Color
- * @parent --- Styling ---
- * @desc Warna background bubble (rgba atau hex).
- * @default rgba(44, 27, 32, 0.95)
- *
- * @param Bubble Border Color
- * @parent --- Styling ---
- * @desc Warna border bubble.
- * @default #8B857C
- *
- * @param Name Bar Background Color
- * @parent --- Styling ---
- * @desc Warna background name bar.
- * @default #2c1b20
- *
- * @param Name Bar Border Color
- * @parent --- Styling ---
- * @desc Warna border name bar.
- * @default #8B857C
- *
  * @param Text Color
  * @parent --- Styling ---
  * @desc Warna text di dalam bubble.
@@ -60,16 +46,40 @@
  * @desc Warna text nama di name bar.
  * @default #fff9df
  *
- * @param Bubble Padding X
+ * @param Name Offset Left
  * @parent --- Styling ---
  * @type number
- * @desc Padding horizontal di dalam bubble.
+ * @desc Jarak nama dari tepi kiri saat talk left (px).
+ * @default 18
+ *
+ * @param Name Offset Right
+ * @parent --- Styling ---
+ * @type number
+ * @desc Jarak nama dari tepi kanan saat talk right (px).
+ * @default 18
+ *
+ * @param Talk Padding X
+ * @parent --- Styling ---
+ * @type number
+ * @desc Jarak TEXT dari tepi kiri/kanan gambar TalkBubble (bukan margin gambarnya sendiri).
  * @default 16
  *
- * @param Bubble Padding Y
+ * @param Talk Padding Y
  * @parent --- Styling ---
  * @type number
- * @desc Padding vertikal di dalam bubble.
+ * @desc Jarak TEXT dari tepi atas/bawah gambar TalkBubble (bukan margin gambarnya sendiri).
+ * @default 12
+ *
+ * @param Narration Padding X
+ * @parent --- Styling ---
+ * @type number
+ * @desc Jarak TEXT dari tepi kiri/kanan gambar NarrationBox (bukan margin gambarnya sendiri).
+ * @default 16
+ *
+ * @param Narration Padding Y
+ * @parent --- Styling ---
+ * @type number
+ * @desc Jarak TEXT dari tepi atas/bawah gambar NarrationBox (bukan margin gambarnya sendiri).
  * @default 12
  *
  * @param --- Portrait ---
@@ -210,20 +220,23 @@ if (!Imported.SciFi_Core) {
 
 var parameters = PluginManager.parameters("SciFi_MessageUI");
 
-SciFi.MessageUI.TextboxHeight = Number(parameters["Textbox Height"] || 180);
+SciFi.MessageUI.TalkTextboxHeight = Number(parameters["Talk Textbox Height"] || 180);
+SciFi.MessageUI.NarrationTextboxHeight = Number(parameters["Narration Textbox Height"] || 180);
 SciFi.MessageUI.NameBarHeight = Number(parameters["Name Bar Height"] || 45);
 SciFi.MessageUI.PortraitWidth = Number(parameters["Portrait Width"] || 348);
 SciFi.MessageUI.PortraitHeight = Number(parameters["Portrait Height"] || 524);
 
-SciFi.MessageUI.BubbleBackgroundColor = String(parameters["Bubble Background Color"] || "rgba(44, 27, 32, 0.95)");
-SciFi.MessageUI.BubbleBorderColor = String(parameters["Bubble Border Color"] || "#8B857C");
-SciFi.MessageUI.NameBarBackgroundColor = String(parameters["Name Bar Background Color"] || "#2c1b20");
-SciFi.MessageUI.NameBarBorderColor = String(parameters["Name Bar Border Color"] || "#8B857C");
 SciFi.MessageUI.TextColor = String(parameters["Text Color"] || "#fff9df");
 SciFi.MessageUI.NameTextColor = String(parameters["Name Text Color"] || "#fff9df");
 
-SciFi.MessageUI.BubblePaddingX = Number(parameters["Bubble Padding X"] || 16);
-SciFi.MessageUI.BubblePaddingY = Number(parameters["Bubble Padding Y"] || 12);
+SciFi.MessageUI.NameOffsetLeft = Number(parameters["Name Offset Left"] || 18);
+
+SciFi.MessageUI.NameOffsetRight = Number(parameters["Name Offset Right"] || 18);
+
+SciFi.MessageUI.TalkPaddingX = Number(parameters["Talk Padding X"] || 16);
+SciFi.MessageUI.TalkPaddingY = Number(parameters["Talk Padding Y"] || 12);
+SciFi.MessageUI.NarrationPaddingX = Number(parameters["Narration Padding X"] || 16);
+SciFi.MessageUI.NarrationPaddingY = Number(parameters["Narration Padding Y"] || 12);
 
 SciFi.MessageUI.PortraitOffsetX = Number(parameters["Portrait Offset X"] || 0.5);
 SciFi.MessageUI.PortraitOffsetY = Number(parameters["Portrait Offset Y"] || 0.5);
@@ -491,7 +504,7 @@ SciFi.MessageUI.easeInOutQuad = function(t) {
 
 Window_Message.prototype.standardPadding = function() {
 
-    return 18;
+    return 0;
 
 };
 
@@ -658,12 +671,12 @@ Window_Message.prototype.windowHeight = function() {
 
     if (mode === "talkLeft" || mode === "talkRight") {
 
-        return SciFi.MessageUI.NameBarHeight + SciFi.MessageUI.TextboxHeight;
+        return SciFi.MessageUI.NameBarHeight + SciFi.MessageUI.TalkTextboxHeight;
 
     }
 
     // narration: textbox aja, gak ada name bar
-    return SciFi.MessageUI.TextboxHeight;
+    return SciFi.MessageUI.NarrationTextboxHeight;
 
 };
 
@@ -780,22 +793,22 @@ Window_Message.prototype.newPage = function(textState) {
 
         this.drawTalkBackground(mode);
 
-        textState.x = SciFi.MessageUI.BubblePaddingX;
+        textState.x = SciFi.MessageUI.TalkPaddingX;
 
-        textState.y = SciFi.MessageUI.NameBarHeight + SciFi.MessageUI.BubblePaddingY;
+        textState.y = SciFi.MessageUI.NameBarHeight + SciFi.MessageUI.TalkPaddingY;
 
-        textState.left = SciFi.MessageUI.BubblePaddingX;
+        textState.left = SciFi.MessageUI.TalkPaddingX;
 
     } else {
 
         // narration
         this.drawNarrationBackground();
 
-        textState.x = SciFi.MessageUI.BubblePaddingX;
+        textState.x = SciFi.MessageUI.NarrationPaddingX;
 
-        textState.y = SciFi.MessageUI.BubblePaddingY;
+        textState.y = SciFi.MessageUI.NarrationPaddingY;
 
-        textState.left = SciFi.MessageUI.BubblePaddingX;
+        textState.left = SciFi.MessageUI.NarrationPaddingX;
 
     }
 
@@ -809,9 +822,17 @@ var _SciFi_MessageUI_Window_Message_newLineX = Window_Message.prototype.newLineX
 
 Window_Message.prototype.newLineX = function() {
 
+    var mode = SciFi.MessageUI.textboxMode;
+
     // Semua mode sekarang pakai custom background (image), jadi
-    // semuanya butuh padding yang sama (bukan cuma talk mode).
-    return SciFi.MessageUI.BubblePaddingX;
+    // semuanya butuh padding -- tapi besarnya beda talk vs narration.
+    if (mode === "talkLeft" || mode === "talkRight") {
+
+        return SciFi.MessageUI.TalkPaddingX;
+
+    }
+
+    return SciFi.MessageUI.NarrationPaddingX;
 
 };
 
@@ -889,17 +910,20 @@ Window_Message.prototype.drawTalkBackground = function(mode) {
 
     var align = (mode === "talkLeft") ? "left" : "right";
 
+    // Offset jarak nama dari tepi -- berbeda kiri vs kanan.
+    var nameOffsetX = (mode === "talkLeft") ? SciFi.MessageUI.NameOffsetLeft : SciFi.MessageUI.NameOffsetRight;
+
     this.changeTextColor(SciFi.MessageUI.NameTextColor);
 
     this.drawText(
 
         name,
 
-        this.standardPadding(),
+        nameOffsetX,
 
-        (nameBarHeight - this.lineHeight()) / 2,
+        (nameBarHeight - this.lineHeight()) / 2 - 10,
 
-        contentsWidth - (this.standardPadding() * 2),
+        contentsWidth - (nameOffsetX * 2),
 
         align
 
